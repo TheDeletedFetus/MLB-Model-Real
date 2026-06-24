@@ -1,0 +1,5167 @@
+MLB PREDICTIVE MODEL - MASTER CONTEXT FILE
+
+VERSION: v0.0.9-alpha
+
+IMPORTANT:
+
+This file contains the complete current state of the MLB Predictive Model project.
+
+Treat this file as the authoritative source of truth.
+
+When making recommendations, modifications, or writing code:
+
+* Preserve existing architecture unless a clear improvement exists.
+* Preserve historical data collection requirements.
+* Preserve append-only HISTORY functionality.
+* Preserve version history.
+* Preserve documented roadmap objectives.
+* Explain code changes whenever possible because the project owner is learning software development during the build process.
+* Do not tune model weights based only on intuition. Weight changes should be supported by historical testing and out-of-sample validation.
+
+PROJECT GOAL:
+
+Build a fully automated MLB betting model that identifies positive expected value opportunities by comparing internally generated win probabilities against market-implied probabilities.
+
+CURRENT TECHNOLOGY STACK:
+
+Current:
+* Google Sheets
+* Google Apps Script
+
+Future:
+* Python
+* SQLite
+* Private GitHub Repository
+
+CURRENT PROJECT STATUS:
+
+Version:
+v0.0.9-alpha
+
+Current Phase:
+Phase 3 - Optimized Historical Backtesting & Feature Validation
+
+Current Milestone:
+Feature testing and weight optimization framework
+
+Next Major Milestone:
+v0.1.0 Functional Prototype
+
+DEFINITION OF v1.0:
+
+A fully automated MLB prediction system that:
+
+* Pulls MLB data automatically.
+* Pulls betting odds automatically.
+* Generates daily win probabilities.
+* Calculates market edge.
+* Stores historical predictions.
+* Stores historical game results.
+* Backtests historical seasons.
+* Tracks ROI and performance.
+* Requires minimal manual intervention.
+
+Machine learning is NOT required for v1.0.
+
+PROJECT PRINCIPLES:
+
+1. HISTORY is append-only.
+2. Never delete tracked statistics from historical records.
+3. Preserve raw data whenever possible.
+4. Backtesting capability is mandatory.
+5. Dashboard reporting is a core feature.
+6. Simplicity is preferred over unnecessary complexity.
+7. A model that beats the market is more valuable than a more sophisticated model that does not.
+8. Machine learning is a future enhancement, not the current objective.
+9. Confidence is not valid until calibrated against historical results.
+10. Weight optimization must be evidence-based and tested against historical outcomes.
+
+RULES:
+
+1. HISTORY is append-only.
+2. Never delete tracked statistics from historical records.
+3. Preserve raw data whenever possible.
+4. Backtesting capability is mandatory.
+5. Dashboard reporting is a core feature.
+6. Explain code changes when possible.
+7. Simplicity is preferred over complexity.
+8. Machine learning is NOT required for v1.0.
+9. Do not treat win percentage alone as betting edge.
+10. Do not tune weights until feature-level testing identifies useful and harmful inputs.
+
+ROADMAP:
+
+v0.0.7
+✓ Historical ingestion foundation
+✓ Historical game database
+✓ Historical ingestion logging
+✓ Historical coverage summary
+
+v0.0.8
+✓ Historical model reconstruction
+✓ Historical scoring
+✓ Historical backtesting foundation
+✓ Historical validation summary
+
+v0.0.9
+✓ Optimized historical backtest engine
+✓ Full 2026 season-to-date backtesting
+✓ Optimized historical backtest summary
+✓ Confidence bucket reporting
+✓ Timeout issue resolved for 2026 season-to-date testing
+
+v0.1.0
+□ Feature testing framework
+□ Single-feature performance testing
+□ Ablation testing
+□ Weight optimization framework
+□ Confidence calibration table
+□ Historical odds reconstruction plan
+□ First true model validation report
+
+VERSION HISTORY:
+
+v0.0.1 Initial architecture
+v0.0.2 Schedule and team data imports
+v0.0.3 Starting pitcher integration
+v0.0.4 Model Matrix framework
+v0.0.5 HISTORY framework
+v0.0.6 Dashboard and roadmap
+v0.0.7 Historical ingestion foundation
+v0.0.8 Historical model reconstruction foundation
+v0.0.9 Optimized historical backtesting engine
+
+CURRENT BACKTEST RESULT:
+
+Optimized historical backtest:
+Date range: 2026 season-to-date through June 22, 2026
+Games processed: 1,141
+Correct picks: 565
+Incorrect picks: 576
+Win rate: 49.5%
+
+Confidence bucket results:
+0-20: 259 games, 126 correct, 133 incorrect, 48.6%
+21-40: 227 games, 109 correct, 118 incorrect, 48.0%
+41-60: 168 games, 65 correct, 103 incorrect, 38.7%
+61-80: 138 games, 66 correct, 72 incorrect, 47.8%
+81-100: 349 games, 199 correct, 150 incorrect, 57.0%
+
+BACKTEST INTERPRETATION:
+
+The optimized engine works and can process the full ingested 2026 dataset without timing out.
+
+The current simple historical model is not strong overall. Its full-sample win rate is below break-even at 49.5%.
+
+The 81-100 confidence bucket shows possible signal at 57.0%, but the middle confidence buckets are weak. Confidence is therefore not calibrated yet.
+
+The next development priority is feature testing, not adding more baseball statistics.
+
+CURRENT MODEL PHILOSOPHY:
+
+The objective is not to predict winners.
+
+The objective is to identify market mispricing.
+
+Success is measured by ROI and closing-line performance, not win percentage.
+
+Machine learning is a future enhancement after a profitable baseline model is established.
+
+CURRENT HISTORICAL MODEL FEATURES:
+
+The optimized historical model currently reconstructs:
+
+* Win percentage before game date
+* Runs per game before game date
+* Runs allowed per game before game date
+* Run differential before game date
+* Road win percentage for away teams
+* Home win percentage for home teams
+* Last 7 day runs per game
+* Last 7 day runs allowed per game
+
+The optimized historical model does not yet reconstruct:
+
+* OPS
+* OPS vs handedness
+* Starter pitcher stats
+* Bullpen quality
+* Bullpen fatigue
+* Park factors by date
+* Weather by date
+* Historical betting odds
+* Market implied probability
+* ROI against actual odds
+
+CURRENT FEATURE TESTING PRIORITY:
+
+Next code target:
+Feature_Testing
+
+Purpose:
+Test each reconstructed feature individually to determine whether it has predictive value.
+
+Initial features to test:
+* Win % Edge
+* Runs/Game Edge
+* Runs Allowed/Game Edge
+* Run Differential Edge
+* Home/Away Win % Edge
+* Recent Runs/Game Edge
+* Recent Runs Allowed/Game Edge
+
+Testing method:
+1. Use one feature at a time.
+2. Pick the side favored by that feature.
+3. Compare pick to winner.
+4. Calculate win rate.
+5. Compare features against each other.
+6. Identify features that improve or harm performance.
+7. Only then begin weight optimization.
+
+WEIGHT OPTIMIZATION METHODOLOGY:
+
+1. Build enough historical rows.
+2. Test each feature individually.
+3. Build an equal-weight model.
+4. Run ablation tests by removing one feature at a time.
+5. Test small weight adjustments.
+6. Validate on out-of-sample date ranges.
+7. Avoid overfitting to the same historical sample.
+8. Do not optimize only for win percentage once odds are available; optimize for ROI and expected value.
+
+TABS:
+
+Today
+Purpose: Mobile-friendly daily betting card showing games, model picks, confidence, odds, and key factors.
+
+DashBoard
+Purpose: Quick summary of model performance and ranked games for today.
+
+Performance_Dashboard
+Purpose: Long-term model audit showing record, ROI, profit, favorite/underdog performance, and factor effectiveness.
+
+Settings
+Purpose: Controls active stats and their weights in the scoring model.
+
+Data_Dictionary
+Purpose: Master reference for every stat, feature, formula, and future enhancement in the project.
+
+Model_Matrix
+Purpose: Core feature warehouse where all pregame data is merged and scored for each matchup.
+
+HISTORY
+Purpose: Permanent append-only training dataset containing model inputs, outputs, odds, picks, and game results.
+
+HISTORY_ARCHIVE
+Purpose: Backup copy of HISTORY for data preservation and recovery.
+
+RAW_Schedule
+Purpose: Daily MLB schedule and game metadata.
+
+RAW_Starting_Pitchers
+Purpose: Probable starting pitchers for upcoming games.
+
+RAW_Team_Hitting
+Purpose: Team offensive statistics used by the model.
+
+RAW_Team_Pitching
+Purpose: Team pitching statistics used by the model.
+
+RAW_Team_Quality
+Purpose: Team strength metrics such as run differential and overall performance indicators.
+
+RAW_Team_Splits
+Purpose: Team offensive splits versus left-handed and right-handed pitching.
+
+RAW_Recent_Form
+Purpose: Team performance over recent games.
+
+RAW_Bullpen
+Purpose: Current bullpen performance metrics.
+
+RAW_Bullpen_Quality
+Purpose: Advanced bullpen strength measurements.
+
+RAW_Bullpen_Fatigue
+Purpose: Bullpen workload and rest tracking.
+
+RAW_Starter_Recent_Form
+Purpose: Recent performance metrics for starting pitchers.
+
+RAW_Starter_Home_Away_Splits
+Purpose: Home and away performance splits for starting pitchers.
+
+RAW_Team_Home_Away_Splits
+Purpose: Team home and road performance splits.
+
+RAW_Park_Factors
+Purpose: Ballpark effects on offense and scoring environment.
+
+RAW_Weather
+Purpose: Game-day weather conditions that may impact performance.
+
+RAW_Odds
+Purpose: Latest sportsbook moneyline odds used by the model.
+
+ODDS_HISTORY
+Purpose: Historical snapshots of betting lines throughout the day for line movement analysis.
+
+RAW_Results
+Purpose: Final scores, winners, and game status information.
+
+Team_Splits
+Purpose: Processed split data used as an intermediate support table for Model_Matrix.
+
+RAW_Historical_Games
+Purpose: Stores completed historical MLB games, scores, winners, starters, venues, and ingestion metadata.
+
+Historical_Ingestion_Log
+Purpose: Tracks historical ingestion runs, date ranges processed, number of games added, and run status.
+
+Historical_Ingestion_Summary
+Purpose: Summarizes ingested historical game coverage by season and team.
+
+Historical_Model_Input
+Purpose: Staging table for rebuilding historical model inputs for a selected past date before full historical Model Matrix reconstruction.
+
+Historical_Backtest
+Purpose: Stores historical predictions and results from the original slower historical backtest engine.
+
+Historical_Backtest_Summary
+Purpose: Stores win rate, confidence buckets, and validation metrics from the original slower historical backtest engine.
+
+Historical_Backtest_Optimized
+Purpose: Stores full optimized historical backtest output using a chronological one-pass engine.
+
+Historical_Backtest_Optimized_Summary
+Purpose: Stores full optimized backtest summary, confidence bucket performance, and validation metrics.
+
+Future: Feature_Testing
+Purpose: Will test each reconstructed feature individually to evaluate predictive value.
+
+HISTORY TARGET SCHEMA:
+
+Game_Date
+Home_Team
+Away_Team
+Pick
+Model_Prob
+Market_Prob
+Edge
+Odds
+Result
+Profit
+
+MODEL INPUTS:
+
+Starting Pitcher
+Bullpen
+Run Differential
+OPS vs Handedness
+Home/Away
+Market Odds
+
+MODEL OUTPUTS:
+
+Win Probability
+Market Probability
+Edge %
+Recommended Side
+Confidence
+
+HIGH PRIORITY:
+
+- Build Feature_Testing.
+- Identify useful vs harmful historical features.
+- Build confidence calibration.
+- Begin weight optimization framework.
+
+MEDIUM PRIORITY:
+
+- Historical odds reconstruction.
+- Market edge calculation.
+- ROI testing.
+- Today tab mobile polish.
+- Dashboard validation.
+
+LOW PRIORITY:
+
+- Python migration.
+- SQLite migration.
+- Machine learning model.
+- Private GitHub repository setup.
+
+LESSONS LEARNED:
+
+1. Build HISTORY first.
+2. Preserve raw data.
+3. Never delete tracked metrics.
+4. Backtesting requirements must be defined before scoring logic.
+5. Dashboard design should occur before heavy model refinement.
+6. GitHub should be introduced before Python migration.
+7. Historical ingestion and historical model reconstruction are separate problems.
+8. Confidence must be calibrated; it cannot be assumed from score gap alone.
+9. A working backtest engine is valuable even when the model result is poor.
+10. Poor model performance is useful if it identifies which features are noise.
+11. Full-sample win rate is not enough; confidence buckets and feature performance matter.
+12. Once odds are available, ROI and expected value matter more than raw winner prediction.
+
+KNOWN ISSUES:
+
+v0.0.9-alpha
+
+1. Current optimized historical model is not profitable or predictive overall based on raw winner testing.
+2. Full optimized 2026 season-to-date backtest returned 49.5% win rate.
+3. Confidence values are not calibrated against historical outcomes.
+4. Middle confidence buckets performed poorly in the first full optimized test.
+5. 81-100 confidence bucket showed possible signal at 57.0%, but this requires more validation.
+6. Historical odds reconstruction is not implemented.
+7. Market edge calculations are not implemented.
+8. ROI testing is not implemented.
+9. Feature importance testing is not implemented.
+10. Weight optimization framework is not implemented.
+11. Historical model reconstructs only a subset of live Model_Matrix features.
+12. Several raw data imports rely on Baseball Reference HTML scraping and may break if page structure changes.
+13. Today tab is functional but not yet optimized for mobile.
+14. Dashboard exists but requires validation.
+
+NEXT MAJOR MILESTONE:
+
+v0.1.0 Functional Prototype
+
+Objective:
+Move from "historical backtest engine works" to "model features can be tested, weighted, and validated."
+
+Success Criteria:
+- Feature_Testing tab exists.
+- Each reconstructed historical feature can be tested individually.
+- Feature win rates are known.
+- Harmful/noisy features are identified.
+- Equal-weight vs adjusted-weight models can be compared.
+- Confidence calibration table exists.
+- Optimized backtest can rerun after weight changes.
+- Historical odds reconstruction plan is documented.
+
+
+CODE FOLLOWS
+
+===== BEGIN APPS SCRIPT =====
+MAIN.GS
+
+function runMorningCoreUpdate() {
+  importSchedule();
+
+  importTeamHitting();
+  importTeamPitching();
+  importTeamQuality();
+  importTeamSplits();
+  importRecentForm();
+
+  importStartingPitchers();
+  importStarterRecentForm();
+  importStarterHomeAwaySplits();
+
+  importTeamHomeAwaySplits();
+
+  importParkFactors();
+  importWeather();
+
+  buildModelMatrix();
+  scoreModelMatrix();
+  buildTodayView();
+  buildDashboard();
+  buildPerformanceDashboard();
+}
+
+
+function runBullpenUpdate() {
+  importBullpen();
+  importBullpenQuality();
+  importBullpenFatigue();
+
+  buildModelMatrix();
+  scoreModelMatrix();
+  buildTodayView();
+  buildDashboard();
+  buildPerformanceDashboard();
+}
+
+
+function runOddsSnapshot() {
+  importOdds();
+
+  buildModelMatrix();
+  scoreModelMatrix();
+  buildTodayView();
+  buildDashboard();
+  buildPerformanceDashboard();
+}
+
+
+function runResultsAndHistory() {
+  importResults();
+
+  buildModelMatrix();
+  scoreModelMatrix();
+  buildTodayView();
+  buildDashboard();
+
+  appendHistorySnapshot();
+  buildPerformanceDashboard();
+}
+
+UTILITIES.GS
+
+function MLB_API(url) {
+  const response = UrlFetchApp.fetch(url);
+  return JSON.parse(response.getContentText());
+}
+
+function getOrCreateSheet(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  return sheet;
+}
+
+SCHEDULE.GS
+
+function getPitcherHand(playerId) {
+  if (!playerId) return "";
+
+  const url = "https://statsapi.mlb.com/api/v1/people/" + playerId;
+  const data = MLB_API(url);
+
+  return data.people?.[0]?.pitchHand?.code || "";
+}
+
+function importSchedule() {
+  const sheet = getOrCreateSheet("RAW_Schedule");
+  sheet.clearContents();
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const url =
+    "https://statsapi.mlb.com/api/v1/schedule" +
+    "?sportId=1" +
+    "&date=" + today +
+    "&hydrate=probablePitcher,venue";
+
+  const data = MLB_API(url);
+
+  const rows = [[
+    "Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Away SP",
+    "Home SP",
+    "Away SP ID",
+    "Home SP ID",
+    "Away SP Hand",
+    "Home SP Hand",
+    "Status",
+    "Venue"
+  ]];
+
+  const games = data.dates[0]?.games || [];
+
+  games.forEach(game => {
+    const awayProbable = game.teams.away.probablePitcher || {};
+    const homeProbable = game.teams.home.probablePitcher || {};
+
+    rows.push([
+      today,
+      game.gamePk,
+      game.teams.away.team.name,
+      game.teams.home.team.name,
+      awayProbable.fullName || "",
+      homeProbable.fullName || "",
+      awayProbable.id || "",
+      homeProbable.id || "",
+      getPitcherHand(awayProbable.id),
+      getPitcherHand(homeProbable.id),
+      game.status.detailedState || "",
+      game.venue?.name || ""
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+TEAMHITTING.GS
+
+function importTeamHitting() {
+  const sheet = getOrCreateSheet("RAW_Team_Hitting");
+  sheet.clearContents();
+
+  const url = "https://statsapi.mlb.com/api/v1/teams/stats?group=hitting&stats=season&sportIds=1";
+  const data = MLB_API(url);
+
+  const rows = [[
+    "Team",
+    "Team ID",
+    "Games",
+    "Runs",
+    "Runs/Game",
+    "AVG",
+    "OBP",
+    "SLG",
+    "OPS",
+    "HR",
+    "BB",
+    "SO",
+    "BABIP"
+  ]];
+
+  data.stats[0].splits.forEach(row => {
+    const stat = row.stat;
+    const games = Number(stat.gamesPlayed || 0);
+    const runs = Number(stat.runs || 0);
+
+    rows.push([
+      row.team.name,
+      row.team.id,
+      games,
+      runs,
+      games > 0 ? runs / games : "",
+      stat.avg || "",
+      stat.obp || "",
+      stat.slg || "",
+      stat.ops || "",
+      stat.homeRuns || "",
+      stat.baseOnBalls || "",
+      stat.strikeOuts || "",
+      stat.babip || ""
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+TEAMPITCHING.GS
+
+function importTeamPitching() {
+  const sheet = getOrCreateSheet("RAW_Team_Pitching");
+  sheet.clearContents();
+
+  const url = "https://statsapi.mlb.com/api/v1/teams/stats?group=pitching&stats=season&sportIds=1";
+  const data = MLB_API(url);
+
+  const rows = [[
+    "Team",
+    "Team ID",
+    "Games",
+    "Runs Allowed",
+    "ERA",
+    "WHIP",
+    "K/9",
+    "BB/9",
+    "HR/9",
+    "K-BB Ratio",
+    "LOB%"
+  ]];
+
+  data.stats[0].splits.forEach(row => {
+    const stat = row.stat;
+
+    rows.push([
+      row.team.name,
+      row.team.id,
+      stat.gamesPlayed || "",
+      stat.runs || "",
+      stat.era || "",
+      stat.whip || "",
+      stat.strikeoutsPer9Inn || "",
+      stat.walksPer9Inn || "",
+      stat.homeRunsPer9 || "",
+      stat.strikeoutWalkRatio || "",
+      stat.leftOnBasePercentage || ""
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+STARTINGPITCHERS.GS
+
+function importStartingPitchers() {
+  const scheduleSheet = getOrCreateSheet("RAW_Schedule");
+  const pitcherSheet = getOrCreateSheet("RAW_Starting_Pitchers");
+
+  pitcherSheet.clearContents();
+
+  const scheduleData = scheduleSheet.getDataRange().getValues();
+  const headers = scheduleData[0];
+
+  const awaySpIdCol = headers.indexOf("Away SP ID");
+  const homeSpIdCol = headers.indexOf("Home SP ID");
+
+  const pitcherIds = [];
+
+  for (let i = 1; i < scheduleData.length; i++) {
+    const awayId = scheduleData[i][awaySpIdCol];
+    const homeId = scheduleData[i][homeSpIdCol];
+
+    if (awayId) pitcherIds.push(awayId);
+    if (homeId) pitcherIds.push(homeId);
+  }
+
+  const uniquePitcherIds = [...new Set(pitcherIds)];
+
+  const rows = [[
+    "Player",
+    "Player ID",
+    "Team",
+    "Team ID",
+    "Throws",
+    "Games",
+    "Games Started",
+    "ERA",
+    "WHIP",
+    "IP",
+    "SO",
+    "BB",
+    "HR",
+    "K/BB",
+    "K/9",
+    "BB/9",
+    "HR/9"
+  ]];
+
+  uniquePitcherIds.forEach(playerId => {
+    const url =
+      "https://statsapi.mlb.com/api/v1/people/" +
+      playerId +
+      "?hydrate=stats(group=[pitching],type=[season])";
+
+    const data = MLB_API(url);
+    const player = data.people?.[0] || {};
+    const stat = player.stats?.[0]?.splits?.[0]?.stat || {};
+    const team = player.currentTeam || {};
+
+    rows.push([
+      player.fullName || "",
+      player.id || "",
+      team.name || "",
+      team.id || "",
+      player.pitchHand?.code || "",
+      stat.gamesPlayed || "",
+      stat.gamesStarted || "",
+      stat.era || "",
+      stat.whip || "",
+      stat.inningsPitched || "",
+      stat.strikeOuts || "",
+      stat.baseOnBalls || "",
+      stat.homeRuns || "",
+      stat.strikeoutWalkRatio || "",
+      stat.strikeoutsPer9Inn || "",
+      stat.walksPer9Inn || "",
+      stat.homeRunsPer9 || ""
+    ]);
+  });
+
+  pitcherSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+BULLPEN.GS
+
+function importBullpen() {
+  const sheet = getOrCreateSheet("RAW_Bullpen");
+  sheet.clearContents();
+
+  const url = "https://www.baseball-reference.com/leagues/majors/2026-reliever-pitching.shtml";
+  const html = UrlFetchApp.fetch(url).getContentText();
+
+  const tableMatch = html.match(/<table[\s\S]*?<\/table>/);
+  if (!tableMatch) {
+    throw new Error("Could not find Baseball Reference reliever table.");
+  }
+
+  const tableHtml = tableMatch[0];
+  const rowMatches = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const rows = [[
+    "Team",
+    "Relief Games",
+    "Games Finished",
+    "Save Opportunities",
+    "Saves",
+    "Blown Saves",
+    "Save %",
+    "Holds",
+    "Inherited Runners",
+    "Inherited Scored",
+    "Inherited Scored %",
+    "Avg Leverage Index",
+    "Relief Appearances >3 Outs",
+    "Relief Appearances <3 Outs",
+    "Multi-Inning Relief Appearances",
+    "Outs Per Relief Game",
+    "Pitches Per Relief Game",
+    "Last Updated",
+    "Source"
+  ]];
+
+  rowMatches.forEach(rowMatch => {
+    const rowHtml = rowMatch[1];
+
+    const cells = [...rowHtml.matchAll(/<(td|th)[^>]*data-stat="([^"]+)"[^>]*>([\s\S]*?)<\/(td|th)>/g)];
+    const row = {};
+
+    cells.forEach(cell => {
+      const statName = cell[2];
+      const value = stripHtml(cell[3]);
+      row[statName] = value;
+    });
+
+    const teamName = row.team_name || "";
+
+    if (!teamName || teamName === "Tm" || teamName === "League Average") return;
+
+    rows.push([
+      teamName,
+      row.GR || "",
+      row.GF || "",
+      row.SvOpp || "",
+      row.SV || "",
+      row.BSv || "",
+      row.SvOpp_perc || "",
+      row.Hold || "",
+      row.inherited_runners || "",
+      row.inherited_score || "",
+      row.inherited_score_perc || "",
+      row.leverage_index_avg || "",
+      row.IPouts_gt3 || "",
+      row.IPouts_lt3 || "",
+      row.IP_multi || "",
+      row.outs_per_GR || "",
+      row.pitches_per_GR || "",
+      today,
+      "Baseball Reference Reliever Usage"
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+TEAMSPLITS.GS
+
+function importTeamSplits() {
+  const sheet = getOrCreateSheet("RAW_Team_Splits");
+  sheet.clearContents();
+
+  const vsRhp = getBaseballReferenceSplit("vs RHP");
+  const vsLhp = getBaseballReferenceSplit("vs LHP");
+
+  const rows = [[
+    "Team",
+    "Team ID",
+    "OPS vs RHP",
+    "OPS vs LHP",
+    "Last Updated",
+    "Source"
+  ]];
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+  const teams = Object.keys(vsRhp);
+
+  teams.forEach(team => {
+    rows.push([
+      team,
+      "",
+      vsRhp[team] || "",
+      vsLhp[team] || "",
+      today,
+      "Baseball Reference"
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function getBaseballReferenceSplit(splitType) {
+  const encodedSplit = encodeURIComponent(splitType);
+
+  const url =
+    "https://www.baseball-reference.com/tools/split_stats_lg.cgi" +
+    "?full=1" +
+    "&params=plato%7C" + encodedSplit + "%7CML%7C2026%7Cbat%7CAB%7C";
+
+  const html = UrlFetchApp.fetch(url).getContentText();
+
+  const tableMatch = html.match(/<table[\s\S]*?<\/table>/);
+  if (!tableMatch) {
+    throw new Error("Could not find split table for " + splitType);
+  }
+
+  const tableHtml = tableMatch[0];
+  const teamOps = {};
+
+  const rowMatches = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+
+  rowMatches.forEach(rowMatch => {
+    const rowHtml = rowMatch[1];
+
+    const cells = [...rowHtml.matchAll(/<(td|th)[^>]*data-stat="([^"]+)"[^>]*>([\s\S]*?)<\/(td|th)>/g)];
+
+    let teamAbbrev = "";
+    let ops = "";
+
+    cells.forEach(cell => {
+      const statName = cell[2];
+      const rawValue = stripHtml(cell[3]);
+
+      if (statName === "team") teamAbbrev = rawValue;
+      if (statName === "onbase_plus_slugging") ops = rawValue;
+    });
+
+    const teamName = brTeamToMlbName(teamAbbrev);
+
+    if (teamName && ops && teamName !== "LgAvg") {
+      teamOps[teamName] = ops;
+    }
+  });
+
+  return teamOps;
+}
+
+
+function stripHtml(value) {
+  return value
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .trim();
+}
+
+
+function brTeamToMlbName(abbrev) {
+  const map = {
+    "ARI": "Arizona Diamondbacks",
+    "ATL": "Atlanta Braves",
+    "BAL": "Baltimore Orioles",
+    "BOS": "Boston Red Sox",
+    "CHC": "Chicago Cubs",
+    "CHW": "Chicago White Sox",
+    "CIN": "Cincinnati Reds",
+    "CLE": "Cleveland Guardians",
+    "COL": "Colorado Rockies",
+    "DET": "Detroit Tigers",
+    "HOU": "Houston Astros",
+    "KCR": "Kansas City Royals",
+    "LAA": "Los Angeles Angels",
+    "LAD": "Los Angeles Dodgers",
+    "MIA": "Miami Marlins",
+    "MIL": "Milwaukee Brewers",
+    "MIN": "Minnesota Twins",
+    "NYM": "New York Mets",
+    "NYY": "New York Yankees",
+    "ATH": "Athletics",
+    "PHI": "Philadelphia Phillies",
+    "PIT": "Pittsburgh Pirates",
+    "SDP": "San Diego Padres",
+    "SEA": "Seattle Mariners",
+    "SFG": "San Francisco Giants",
+    "STL": "St. Louis Cardinals",
+    "TBR": "Tampa Bay Rays",
+    "TEX": "Texas Rangers",
+    "TOR": "Toronto Blue Jays",
+    "WSN": "Washington Nationals"
+  };
+
+  return map[abbrev] || "";
+}
+
+TEAMQUALITY.GS
+
+function importTeamQuality() {
+  const hittingSheet = getOrCreateSheet("RAW_Team_Hitting");
+  const pitchingSheet = getOrCreateSheet("RAW_Team_Pitching");
+  const qualitySheet = getOrCreateSheet("RAW_Team_Quality");
+
+  qualitySheet.clearContents();
+
+  const hittingData = hittingSheet.getDataRange().getValues();
+  const pitchingData = pitchingSheet.getDataRange().getValues();
+
+  const hittingHeaders = hittingData[0];
+  const pitchingHeaders = pitchingData[0];
+
+  const hitTeamCol = hittingHeaders.indexOf("Team");
+  const runsScoredCol = hittingHeaders.indexOf("Runs");
+
+  const pitchTeamCol = pitchingHeaders.indexOf("Team");
+  const runsAllowedCol = pitchingHeaders.indexOf("Runs Allowed");
+
+  const runsAllowedByTeam = {};
+
+  for (let i = 1; i < pitchingData.length; i++) {
+    const team = pitchingData[i][pitchTeamCol];
+    const runsAllowed = Number(pitchingData[i][runsAllowedCol] || 0);
+    runsAllowedByTeam[team] = runsAllowed;
+  }
+
+  const rows = [[
+    "Team",
+    "Runs Scored",
+    "Runs Allowed",
+    "Run Differential"
+  ]];
+
+  for (let i = 1; i < hittingData.length; i++) {
+    const team = hittingData[i][hitTeamCol];
+    const runsScored = Number(hittingData[i][runsScoredCol] || 0);
+    const runsAllowed = runsAllowedByTeam[team] || 0;
+    const runDifferential = runsScored - runsAllowed;
+
+    rows.push([
+      team,
+      runsScored,
+      runsAllowed,
+      runDifferential
+    ]);
+  }
+
+  qualitySheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+RECENTFORM.GS
+
+function importRecentForm() {
+  const sheet = getOrCreateSheet("RAW_Recent_Form");
+  sheet.clearContents();
+
+  const today = new Date();
+  const windows = [7, 14, 30];
+
+  const teamStats = {};
+
+  windows.forEach(daysBack => {
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - daysBack);
+
+    const start = Utilities.formatDate(startDate, "America/New_York", "yyyy-MM-dd");
+    const end = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+    const scheduleUrl =
+      "https://statsapi.mlb.com/api/v1/schedule" +
+      "?sportId=1" +
+      "&startDate=" + start +
+      "&endDate=" + end;
+
+    const scheduleData = MLB_API(scheduleUrl);
+    const dates = scheduleData.dates || [];
+
+    dates.forEach(dateBlock => {
+      const games = dateBlock.games || [];
+
+      games.forEach(game => {
+        const status = game.status.detailedState || "";
+        const isFinal = status === "Final" || status === "Game Over";
+
+        if (!isFinal) return;
+
+        const boxscoreUrl =
+          "https://statsapi.mlb.com/api/v1/game/" +
+          game.gamePk +
+          "/boxscore";
+
+        const boxscore = MLB_API(boxscoreUrl);
+
+        processRecentFormTeam(
+          teamStats,
+          daysBack,
+          boxscore.teams.away.team.name,
+          boxscore.teams.away.teamStats
+        );
+
+        processRecentFormTeam(
+          teamStats,
+          daysBack,
+          boxscore.teams.home.team.name,
+          boxscore.teams.home.teamStats
+        );
+      });
+    });
+  });
+
+  const rows = [[
+    "Team",
+    "Runs/Game Last 7",
+    "OPS Last 7",
+    "ERA Last 7",
+    "Runs/Game Last 14",
+    "OPS Last 14",
+    "ERA Last 14",
+    "Runs/Game Last 30",
+    "OPS Last 30",
+    "ERA Last 30",
+    "Last Updated"
+  ]];
+
+  const todayText = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+  Object.keys(teamStats).sort().forEach(team => {
+    rows.push([
+      team,
+      calculateRunsPerGame(teamStats[team][7]),
+      calculateOPS(teamStats[team][7]),
+      calculateERA(teamStats[team][7]),
+      calculateRunsPerGame(teamStats[team][14]),
+      calculateOPS(teamStats[team][14]),
+      calculateERA(teamStats[team][14]),
+      calculateRunsPerGame(teamStats[team][30]),
+      calculateOPS(teamStats[team][30]),
+      calculateERA(teamStats[team][30]),
+      todayText
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function processRecentFormTeam(teamStats, daysBack, teamName, stats) {
+  if (!teamStats[teamName]) {
+    teamStats[teamName] = {};
+  }
+
+  if (!teamStats[teamName][daysBack]) {
+    teamStats[teamName][daysBack] = {
+      games: 0,
+      runs: 0,
+      atBats: 0,
+      hits: 0,
+      doubles: 0,
+      triples: 0,
+      homeRuns: 0,
+      walks: 0,
+      hitByPitch: 0,
+      sacrificeFlies: 0,
+      totalBases: 0,
+      earnedRunsAllowed: 0,
+      outsPitched: 0
+    };
+  }
+
+  const bucket = teamStats[teamName][daysBack];
+  const batting = stats.batting || {};
+  const pitching = stats.pitching || {};
+
+  bucket.games += 1;
+  bucket.runs += Number(batting.runs || 0);
+  bucket.atBats += Number(batting.atBats || 0);
+  bucket.hits += Number(batting.hits || 0);
+  bucket.doubles += Number(batting.doubles || 0);
+  bucket.triples += Number(batting.triples || 0);
+  bucket.homeRuns += Number(batting.homeRuns || 0);
+  bucket.walks += Number(batting.baseOnBalls || 0);
+  bucket.hitByPitch += Number(batting.hitByPitch || 0);
+  bucket.sacrificeFlies += Number(batting.sacFlies || 0);
+  bucket.totalBases += Number(batting.totalBases || 0);
+
+  bucket.earnedRunsAllowed += Number(pitching.earnedRuns || 0);
+  bucket.outsPitched += recentInningsToOuts(pitching.inningsPitched || "0.0");
+}
+
+
+function calculateRunsPerGame(bucket) {
+  if (!bucket || bucket.games === 0) return "";
+  return roundRecentNumber(bucket.runs / bucket.games, 2);
+}
+
+
+function calculateOPS(bucket) {
+  if (!bucket || bucket.atBats === 0) return "";
+
+  const obpDenominator =
+    bucket.atBats +
+    bucket.walks +
+    bucket.hitByPitch +
+    bucket.sacrificeFlies;
+
+  const obp =
+    obpDenominator > 0
+      ? (bucket.hits + bucket.walks + bucket.hitByPitch) / obpDenominator
+      : 0;
+
+  const slg =
+    bucket.atBats > 0
+      ? bucket.totalBases / bucket.atBats
+      : 0;
+
+  return roundRecentNumber(obp + slg, 3);
+}
+
+
+function calculateERA(bucket) {
+  if (!bucket || bucket.outsPitched === 0) return "";
+
+  const innings = bucket.outsPitched / 3;
+  return roundRecentNumber((bucket.earnedRunsAllowed * 9) / innings, 2);
+}
+
+
+function recentInningsToOuts(inningsText) {
+  const parts = inningsText.toString().split(".");
+  const fullInnings = Number(parts[0] || 0);
+  const extraOuts = Number(parts[1] || 0);
+
+  return fullInnings * 3 + extraOuts;
+}
+
+
+function roundRecentNumber(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+BULLPENFATIGUE.GS
+
+function importBullpenFatigue() {
+  const sheet = getOrCreateSheet("RAW_Bullpen_Fatigue");
+  sheet.clearContents();
+
+  const today = new Date();
+  const todayText = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+  const fatigueByTeam = {};
+
+  calculateBullpenFatigueWindow(fatigueByTeam, 3);
+  calculateBullpenFatigueWindow(fatigueByTeam, 7);
+
+  const rows = [[
+    "Team",
+    "Bullpen IP Last 3 Days",
+    "Bullpen IP Last 7 Days",
+    "Bullpen Appearances Last 3 Days",
+    "Bullpen Appearances Last 7 Days",
+    "Bullpen Pitches Last 3 Days",
+    "Bullpen Pitches Last 7 Days",
+    "Last Updated"
+  ]];
+
+  Object.keys(fatigueByTeam).sort().forEach(team => {
+    rows.push([
+      team,
+      outsToInningsFatigue(fatigueByTeam[team][3]?.outs || 0),
+      outsToInningsFatigue(fatigueByTeam[team][7]?.outs || 0),
+      fatigueByTeam[team][3]?.appearances || 0,
+      fatigueByTeam[team][7]?.appearances || 0,
+      fatigueByTeam[team][3]?.pitches || 0,
+      fatigueByTeam[team][7]?.pitches || 0,
+      todayText
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function calculateBullpenFatigueWindow(fatigueByTeam, daysBack) {
+  const today = new Date();
+  const startDate = new Date(today);
+
+  startDate.setDate(today.getDate() - daysBack);
+
+  const start = Utilities.formatDate(startDate, "America/New_York", "yyyy-MM-dd");
+  const end = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+  const scheduleUrl =
+    "https://statsapi.mlb.com/api/v1/schedule" +
+    "?sportId=1" +
+    "&startDate=" + start +
+    "&endDate=" + end;
+
+  const scheduleData = MLB_API(scheduleUrl);
+  const dates = scheduleData.dates || [];
+
+  dates.forEach(dateBlock => {
+    const games = dateBlock.games || [];
+
+    games.forEach(game => {
+      const status = game.status.detailedState || "";
+      const isFinal = status === "Final" || status === "Game Over";
+
+      if (!isFinal) return;
+
+      const boxscoreUrl =
+        "https://statsapi.mlb.com/api/v1/game/" +
+        game.gamePk +
+        "/boxscore";
+
+      const boxscore = MLB_API(boxscoreUrl);
+
+      processBullpenFatigueTeam(
+        fatigueByTeam,
+        daysBack,
+        boxscore.teams.away.team.name,
+        boxscore.teams.away.players
+      );
+
+      processBullpenFatigueTeam(
+        fatigueByTeam,
+        daysBack,
+        boxscore.teams.home.team.name,
+        boxscore.teams.home.players
+      );
+    });
+  });
+}
+
+
+function processBullpenFatigueTeam(fatigueByTeam, daysBack, teamName, players) {
+  if (!fatigueByTeam[teamName]) {
+    fatigueByTeam[teamName] = {};
+  }
+
+  if (!fatigueByTeam[teamName][daysBack]) {
+    fatigueByTeam[teamName][daysBack] = {
+      outs: 0,
+      appearances: 0,
+      pitches: 0
+    };
+  }
+
+  Object.keys(players).forEach(playerKey => {
+    const player = players[playerKey];
+    const pitchingStats = player.stats?.pitching;
+
+    if (!pitchingStats) return;
+
+    const gamesStarted = Number(pitchingStats.gamesStarted || 0);
+
+    // Bullpen fatigue = pitchers who appeared in relief.
+    // If gamesStarted is 0 and inningsPitched exists, count him as bullpen use.
+    if (gamesStarted > 0) return;
+    if (!pitchingStats.inningsPitched) return;
+
+    fatigueByTeam[teamName][daysBack].outs += bullpenFatigueInningsToOuts(
+      pitchingStats.inningsPitched
+    );
+
+    fatigueByTeam[teamName][daysBack].appearances += 1;
+    fatigueByTeam[teamName][daysBack].pitches += Number(pitchingStats.numberOfPitches || 0);
+  });
+}
+
+
+function bullpenFatigueInningsToOuts(inningsText) {
+  const parts = inningsText.toString().split(".");
+  const fullInnings = Number(parts[0] || 0);
+  const extraOuts = Number(parts[1] || 0);
+
+  return fullInnings * 3 + extraOuts;
+}
+
+
+function outsToInningsFatigue(outs) {
+  const fullInnings = Math.floor(outs / 3);
+  const remainingOuts = outs % 3;
+
+  return fullInnings + "." + remainingOuts;
+}
+
+STARTERRECENTFORM.GS
+
+function importStarterRecentForm() {
+  const scheduleSheet = getOrCreateSheet("RAW_Schedule");
+  const outputSheet = getOrCreateSheet("RAW_Starter_Recent_Form");
+
+  outputSheet.clearContents();
+
+  const scheduleData = scheduleSheet.getDataRange().getValues();
+  if (scheduleData.length < 2) return;
+
+  const headers = scheduleData[0];
+
+  const awaySpIdCol = headers.indexOf("Away SP ID");
+  const homeSpIdCol = headers.indexOf("Home SP ID");
+
+  const pitcherIds = [];
+
+  for (let i = 1; i < scheduleData.length; i++) {
+    const awayId = scheduleData[i][awaySpIdCol];
+    const homeId = scheduleData[i][homeSpIdCol];
+
+    if (awayId) pitcherIds.push(awayId);
+    if (homeId) pitcherIds.push(homeId);
+  }
+
+  const uniquePitcherIds = [...new Set(pitcherIds)];
+
+  const rows = [[
+    "Player",
+    "Player ID",
+    "Throws",
+    "Starts Found",
+    "ERA Last 3 Starts",
+    "WHIP Last 3 Starts",
+    "K/BB Last 3 Starts",
+    "Avg IP Last 3 Starts",
+    "ERA Last 5 Starts",
+    "WHIP Last 5 Starts",
+    "K/BB Last 5 Starts",
+    "Avg IP Last 5 Starts",
+    "Last Updated"
+  ]];
+
+  const todayText = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  uniquePitcherIds.forEach(playerId => {
+    const pitcher = getStarterRecentForm(playerId);
+
+    rows.push([
+      pitcher.name,
+      playerId,
+      pitcher.throws,
+      pitcher.startsFound,
+      pitcher.last3.era,
+      pitcher.last3.whip,
+      pitcher.last3.kbb,
+      pitcher.last3.avgIp,
+      pitcher.last5.era,
+      pitcher.last5.whip,
+      pitcher.last5.kbb,
+      pitcher.last5.avgIp,
+      todayText
+    ]);
+  });
+
+  outputSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function getStarterRecentForm(playerId) {
+  const personUrl = "https://statsapi.mlb.com/api/v1/people/" + playerId;
+  const personData = MLB_API(personUrl);
+  const person = personData.people?.[0] || {};
+
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - 90);
+
+  const start = Utilities.formatDate(startDate, "America/New_York", "yyyy-MM-dd");
+  const end = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+  const statsUrl =
+    "https://statsapi.mlb.com/api/v1/people/" +
+    playerId +
+    "/stats" +
+    "?stats=gameLog" +
+    "&group=pitching" +
+    "&startDate=" + start +
+    "&endDate=" + end;
+
+  const statsData = MLB_API(statsUrl);
+  const splits = statsData.stats?.[0]?.splits || [];
+
+  const starts = splits
+    .filter(row => Number(row.stat?.gamesStarted || 0) > 0)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  return {
+    name: person.fullName || "",
+    throws: person.pitchHand?.code || "",
+    startsFound: starts.length,
+    last3: calculateStarterWindow(starts.slice(0, 3)),
+    last5: calculateStarterWindow(starts.slice(0, 5))
+  };
+}
+
+
+function calculateStarterWindow(starts) {
+  if (!starts || starts.length === 0) {
+    return {
+      era: "",
+      whip: "",
+      kbb: "",
+      avgIp: ""
+    };
+  }
+
+  let outs = 0;
+  let earnedRuns = 0;
+  let hits = 0;
+  let walks = 0;
+  let strikeouts = 0;
+
+  starts.forEach(start => {
+    const stat = start.stat || {};
+
+    outs += starterRecentInningsToOuts(stat.inningsPitched || "0.0");
+    earnedRuns += Number(stat.earnedRuns || 0);
+    hits += Number(stat.hits || 0);
+    walks += Number(stat.baseOnBalls || 0);
+    strikeouts += Number(stat.strikeOuts || 0);
+  });
+
+  const innings = outs / 3;
+
+  return {
+    era: innings > 0 ? roundStarterRecent((earnedRuns * 9) / innings, 2) : "",
+    whip: innings > 0 ? roundStarterRecent((hits + walks) / innings, 2) : "",
+    kbb: walks > 0 ? roundStarterRecent(strikeouts / walks, 2) : strikeouts,
+    avgIp: starts.length > 0 ? outsToInningsStarterRecent(Math.round(outs / starts.length)) : ""
+  };
+}
+
+
+function starterRecentInningsToOuts(inningsText) {
+  const parts = inningsText.toString().split(".");
+  const fullInnings = Number(parts[0] || 0);
+  const extraOuts = Number(parts[1] || 0);
+
+  return fullInnings * 3 + extraOuts;
+}
+
+
+function outsToInningsStarterRecent(outs) {
+  const fullInnings = Math.floor(outs / 3);
+  const remainingOuts = outs % 3;
+
+  return fullInnings + "." + remainingOuts;
+}
+
+
+function roundStarterRecent(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+TEAMHOMEAWAYSPLITS.GS
+
+function importTeamHomeAwaySplits() {
+  const sheet = getOrCreateSheet("RAW_Team_Home_Away_Splits");
+  sheet.clearContents();
+
+  const homeBatting = getBRTeamBattingSplit("Home");
+  const roadBatting = getBRTeamBattingSplit("Away");
+
+  const homePitching = getBRTeamPitchingSplit("Home");
+  const roadPitching = getBRTeamPitchingSplit("Away");
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const rows = [[
+    "Team",
+    "Home OPS",
+    "Road OPS",
+    "Home OBP",
+    "Road OBP",
+    "Home SLG",
+    "Road SLG",
+    "Home ERA",
+    "Road ERA",
+    "Home WHIP",
+    "Road WHIP",
+    "Home K/9",
+    "Road K/9",
+    "Home K/BB",
+    "Road K/BB",
+    "Last Updated",
+    "Source"
+  ]];
+
+  Object.keys(homeBatting).sort().forEach(team => {
+    const hb = homeBatting[team] || {};
+    const rb = roadBatting[team] || {};
+    const hp = homePitching[team] || {};
+    const rp = roadPitching[team] || {};
+
+    rows.push([
+      team,
+      hb.ops || "",
+      rb.ops || "",
+      hb.obp || "",
+      rb.obp || "",
+      hb.slg || "",
+      rb.slg || "",
+      hp.era || "",
+      rp.era || "",
+      hp.whip || "",
+      rp.whip || "",
+      hp.k9 || "",
+      rp.k9 || "",
+      hp.kbb || "",
+      rp.kbb || "",
+      today,
+      "Baseball Reference home/away batting and pitching splits"
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function getBRTeamBattingSplit(location) {
+  const encodedLocation = encodeURIComponent(location);
+
+  const url =
+    "https://www.baseball-reference.com/tools/split_stats_lg.cgi" +
+    "?full=1" +
+    "&params=home%7C" + encodedLocation + "%7CML%7C2026%7Cbat%7CAB%7C";
+
+  const html = UrlFetchApp.fetch(url).getContentText();
+  const tableMatch = html.match(/<table[\s\S]*?<\/table>/);
+
+  if (!tableMatch) {
+    throw new Error("Could not find Baseball Reference batting table for " + location);
+  }
+
+  const tableHtml = tableMatch[0];
+  const rowMatches = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+
+  const output = {};
+
+  rowMatches.forEach(rowMatch => {
+    const rowHtml = rowMatch[1];
+
+    const cells = [...rowHtml.matchAll(/<(td|th)[^>]*data-stat="([^"]+)"[^>]*>([\s\S]*?)<\/(td|th)>/g)];
+    const row = {};
+
+    cells.forEach(cell => {
+      const statName = cell[2];
+      const value = stripHtml(cell[3]);
+      row[statName] = value;
+    });
+
+    const teamAbbrev = row.team || "";
+    if (!teamAbbrev || teamAbbrev === "Tm" || teamAbbrev === "LgAvg") return;
+
+    const teamName = brTeamToMlbName(teamAbbrev);
+    if (!teamName) return;
+
+    output[teamName] = {
+      ops: row.onbase_plus_slugging || "",
+      obp: row.onbase_perc || "",
+      slg: row.slugging_perc || ""
+    };
+  });
+
+  return output;
+}
+
+
+function getBRTeamPitchingSplit(location) {
+  const encodedLocation = encodeURIComponent(location);
+
+  const url =
+    "https://www.baseball-reference.com/tools/split_stats_lg.cgi" +
+    "?full=1" +
+    "&params=home%7C" + encodedLocation + "%7CML%7C2026%7Cpitch%7CIP%7C";
+
+  const html = UrlFetchApp.fetch(url).getContentText();
+  const tableMatch = html.match(/<table[\s\S]*?<\/table>/);
+
+  if (!tableMatch) {
+    throw new Error("Could not find Baseball Reference pitching table for " + location);
+  }
+
+  const tableHtml = tableMatch[0];
+  const rowMatches = [...tableHtml.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)];
+
+  const output = {};
+
+  rowMatches.forEach(rowMatch => {
+    const rowHtml = rowMatch[1];
+
+    const cells = [...rowHtml.matchAll(/<(td|th)[^>]*data-stat="([^"]+)"[^>]*>([\s\S]*?)<\/(td|th)>/g)];
+    const row = {};
+
+    cells.forEach(cell => {
+      const statName = cell[2];
+      const value = stripHtml(cell[3]);
+      row[statName] = value;
+    });
+
+    const teamAbbrev = row.team || "";
+    if (!teamAbbrev || teamAbbrev === "Tm" || teamAbbrev === "LgAvg") return;
+
+    const teamName = brTeamToMlbName(teamAbbrev);
+    if (!teamName) return;
+
+    output[teamName] = {
+      era: row.earned_run_avg || "",
+      whip: row.whip || "",
+      k9: row.strikeouts_per_nine || "",
+      kbb: row.strikeouts_per_base_on_balls || ""
+    };
+  });
+
+  return output;
+}
+
+PARKFACTORS.GS
+
+function importParkFactors() {
+  const sheet = getOrCreateSheet("RAW_Park_Factors");
+  sheet.clearContents();
+
+  const url =
+    "https://baseballsavant.mlb.com/leaderboard/statcast-park-factors";
+
+  const html = UrlFetchApp.fetch(url).getContentText();
+
+  const match = html.match(/var data = (\[[\s\S]*?\]);/);
+
+  if (!match) {
+    throw new Error("Could not locate park factor data.");
+  }
+
+  const parkData = JSON.parse(match[1]);
+
+  const rows = [[
+    "Venue",
+    "Team",
+    "Run Factor",
+    "HR Factor",
+    "Hit Factor",
+    "PA Sample",
+    "Year Range",
+    "Last Updated",
+    "Source"
+  ]];
+
+  const today = Utilities.formatDate(
+    new Date(),
+    "America/New_York",
+    "yyyy-MM-dd"
+  );
+
+  parkData.forEach(park => {
+    rows.push([
+      park.venue_name || "",
+      park.name_display_club || "",
+      park.index_runs || "",
+      park.index_hr || "",
+      park.index_hits || "",
+      park.n_pa || "",
+      park.year_range || "",
+      today,
+      "Baseball Savant Park Factors"
+    ]);
+  });
+
+  sheet
+    .getRange(1, 1, rows.length, rows[0].length)
+    .setValues(rows);
+}
+
+WEATHER.GS
+
+function importWeather() {
+  const scheduleSheet = getOrCreateSheet("RAW_Schedule");
+  const weatherSheet = getOrCreateSheet("RAW_Weather");
+
+  weatherSheet.clearContents();
+
+  const scheduleData = scheduleSheet.getDataRange().getValues();
+  if (scheduleData.length < 2) return;
+
+  const headers = scheduleData[0];
+
+  const gameIdCol = headers.indexOf("Game ID");
+  const awayTeamCol = headers.indexOf("Away Team");
+  const homeTeamCol = headers.indexOf("Home Team");
+  const venueCol = headers.indexOf("Venue");
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const rows = [[
+    "Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Venue",
+    "Temperature",
+    "Condition",
+    "Wind",
+    "Last Updated",
+    "Source"
+  ]];
+
+  for (let i = 1; i < scheduleData.length; i++) {
+    const gameId = scheduleData[i][gameIdCol];
+
+    if (!gameId) continue;
+
+    const url =
+  "https://statsapi.mlb.com/api/v1.1/game/" +
+  gameId +
+  "/feed/live";
+
+    const data = MLB_API(url);
+    const weather = data.gameData?.weather || {};
+
+    rows.push([
+      today,
+      gameId,
+      scheduleData[i][awayTeamCol],
+      scheduleData[i][homeTeamCol],
+      scheduleData[i][venueCol],
+      weather.temp || "",
+      weather.condition || "",
+      weather.wind || "",
+      today,
+      "MLB Stats API gameData.weather"
+    ]);
+  }
+
+  weatherSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+BULLPENQUALITY.GS
+
+function importBullpenQuality() {
+  const sheet = getOrCreateSheet("RAW_Bullpen_Quality");
+  sheet.clearContents();
+
+  const today = new Date();
+  const seasonStart = "2026-03-26";
+  const todayText = Utilities.formatDate(today, "America/New_York", "yyyy-MM-dd");
+
+  const scheduleUrl =
+    "https://statsapi.mlb.com/api/v1/schedule" +
+    "?sportId=1" +
+    "&gameTypes=R" +
+    "&startDate=" + seasonStart +
+    "&endDate=" + todayText;
+
+  const scheduleData = MLB_API(scheduleUrl);
+  const bullpen = {};
+  const validTeams = getValidMlbTeams();
+
+  (scheduleData.dates || []).forEach(dateBlock => {
+    (dateBlock.games || []).forEach(game => {
+      const status = game.status.detailedState || "";
+      const isFinal = status === "Final" || status === "Game Over";
+
+      if (!isFinal) return;
+
+      const boxscoreUrl =
+        "https://statsapi.mlb.com/api/v1/game/" +
+        game.gamePk +
+        "/boxscore";
+
+      const boxscore = MLB_API(boxscoreUrl);
+
+      const awayTeam = boxscore.teams.away.team.name;
+      const homeTeam = boxscore.teams.home.team.name;
+
+      if (validTeams.has(awayTeam)) {
+        processBullpenQualityTeam(
+          bullpen,
+          awayTeam,
+          boxscore.teams.away.players
+        );
+      }
+
+      if (validTeams.has(homeTeam)) {
+        processBullpenQualityTeam(
+          bullpen,
+          homeTeam,
+          boxscore.teams.home.players
+        );
+      }
+    });
+  });
+
+  const rows = [[
+    "Team",
+    "Bullpen IP",
+    "Bullpen ERA",
+    "Bullpen WHIP",
+    "Bullpen K/9",
+    "Bullpen BB/9",
+    "Bullpen HR/9",
+    "Bullpen SO",
+    "Bullpen BB",
+    "Bullpen HR",
+    "Last Updated",
+    "Source"
+  ]];
+
+  Object.keys(bullpen).sort().forEach(team => {
+    const bp = bullpen[team];
+    const innings = bp.outs / 3;
+
+    rows.push([
+      team,
+      outsToInningsBullpenQuality(bp.outs),
+      innings > 0 ? roundBullpenQuality((bp.earnedRuns * 9) / innings, 2) : "",
+      innings > 0 ? roundBullpenQuality((bp.hits + bp.walks) / innings, 2) : "",
+      innings > 0 ? roundBullpenQuality((bp.strikeouts * 9) / innings, 2) : "",
+      innings > 0 ? roundBullpenQuality((bp.walks * 9) / innings, 2) : "",
+      innings > 0 ? roundBullpenQuality((bp.homeRuns * 9) / innings, 2) : "",
+      bp.strikeouts,
+      bp.walks,
+      bp.homeRuns,
+      todayText,
+      "MLB Stats API regular-season boxscores, reliever-only"
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function processBullpenQualityTeam(bullpen, teamName, players) {
+  if (!bullpen[teamName]) {
+    bullpen[teamName] = {
+      outs: 0,
+      earnedRuns: 0,
+      hits: 0,
+      walks: 0,
+      strikeouts: 0,
+      homeRuns: 0
+    };
+  }
+
+  Object.keys(players).forEach(playerKey => {
+    const player = players[playerKey];
+    const pitching = player.stats?.pitching;
+
+    if (!pitching) return;
+
+    const gamesStarted = Number(pitching.gamesStarted || 0);
+
+    if (gamesStarted > 0) return;
+    if (!pitching.inningsPitched) return;
+
+    bullpen[teamName].outs += bullpenQualityInningsToOuts(pitching.inningsPitched);
+    bullpen[teamName].earnedRuns += Number(pitching.earnedRuns || 0);
+    bullpen[teamName].hits += Number(pitching.hits || 0);
+    bullpen[teamName].walks += Number(pitching.baseOnBalls || 0);
+    bullpen[teamName].strikeouts += Number(pitching.strikeOuts || 0);
+    bullpen[teamName].homeRuns += Number(pitching.homeRuns || 0);
+  });
+}
+
+
+function bullpenQualityInningsToOuts(inningsText) {
+  const parts = inningsText.toString().split(".");
+  return Number(parts[0] || 0) * 3 + Number(parts[1] || 0);
+}
+
+
+function outsToInningsBullpenQuality(outs) {
+  return Math.floor(outs / 3) + "." + (outs % 3);
+}
+
+
+function roundBullpenQuality(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+
+function getValidMlbTeams() {
+  const hittingSheet = getOrCreateSheet("RAW_Team_Hitting");
+  const data = hittingSheet.getDataRange().getValues();
+
+  const headers = data[0];
+  const teamCol = headers.indexOf("Team");
+
+  const teams = new Set();
+
+  for (let i = 1; i < data.length; i++) {
+    const team = data[i][teamCol];
+    if (team) teams.add(team);
+  }
+
+  return teams;
+}
+
+STARTERHOMEAWAYSPLITS.GS
+
+function importStarterHomeAwaySplits() {
+  const scheduleSheet = getOrCreateSheet("RAW_Schedule");
+  const outputSheet = getOrCreateSheet("RAW_Starter_Home_Away_Splits");
+
+  outputSheet.clearContents();
+
+  const scheduleData = scheduleSheet.getDataRange().getValues();
+  if (scheduleData.length < 2) return;
+
+  const headers = scheduleData[0];
+  const awaySpIdCol = headers.indexOf("Away SP ID");
+  const homeSpIdCol = headers.indexOf("Home SP ID");
+
+  const pitcherIds = [];
+
+  for (let i = 1; i < scheduleData.length; i++) {
+    const awayId = scheduleData[i][awaySpIdCol];
+    const homeId = scheduleData[i][homeSpIdCol];
+
+    if (awayId) pitcherIds.push(awayId);
+    if (homeId) pitcherIds.push(homeId);
+  }
+
+  const uniquePitcherIds = [...new Set(pitcherIds)];
+  const todayText = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const rows = [[
+    "Player",
+    "Player ID",
+    "Throws",
+    "Home ERA",
+    "Road ERA",
+    "Home WHIP",
+    "Road WHIP",
+    "Home K/BB",
+    "Road K/BB",
+    "Home K/9",
+    "Road K/9",
+    "Home BB/9",
+    "Road BB/9",
+    "Last Updated",
+    "Source"
+  ]];
+
+  uniquePitcherIds.forEach(playerId => {
+    const data = getStarterHomeAwayData(playerId);
+
+    rows.push([
+      data.name,
+      playerId,
+      data.throws,
+      data.home.era,
+      data.road.era,
+      data.home.whip,
+      data.road.whip,
+      data.home.kbb,
+      data.road.kbb,
+      data.home.k9,
+      data.road.k9,
+      data.home.bb9,
+      data.road.bb9,
+      todayText,
+      "MLB Stats API home/away player pitching splits"
+    ]);
+  });
+
+  outputSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+
+function getStarterHomeAwayData(playerId) {
+  const personUrl = "https://statsapi.mlb.com/api/v1/people/" + playerId;
+  const personData = MLB_API(personUrl);
+  const person = personData.people?.[0] || {};
+
+  const statsUrl =
+    "https://statsapi.mlb.com/api/v1/people/" +
+    playerId +
+    "/stats" +
+    "?stats=homeAndAway" +
+    "&group=pitching";
+
+  const statsData = MLB_API(statsUrl);
+  const splits = statsData.stats?.[0]?.splits || [];
+
+  const output = {
+    name: person.fullName || "",
+    throws: person.pitchHand?.code || "",
+    home: blankStarterHomeAwayBucket(),
+    road: blankStarterHomeAwayBucket()
+  };
+
+  splits.forEach(split => {
+    const stat = split.stat || {};
+
+    const bucket = {
+      era: stat.era || "",
+      whip: stat.whip || "",
+      kbb: stat.strikeoutWalkRatio || "",
+      k9: stat.strikeoutsPer9Inn || "",
+      bb9: stat.walksPer9Inn || ""
+    };
+
+    if (split.isHome === true) {
+      output.home = bucket;
+    }
+
+    if (split.isHome === false) {
+      output.road = bucket;
+    }
+  });
+
+  return output;
+}
+
+
+function blankStarterHomeAwayBucket() {
+  return {
+    era: "",
+    whip: "",
+    kbb: "",
+    k9: "",
+    bb9: ""
+  };
+}
+
+ODDS.GS
+
+function importOdds() {
+  const rawSheet = getOrCreateSheet("RAW_Odds");
+  const historySheet = getOrCreateSheet("ODDS_HISTORY");
+
+  rawSheet.clearContents();
+
+  const apiKey = PropertiesService
+    .getScriptProperties()
+    .getProperty("ODDS_API_KEY");
+
+  if (!apiKey) {
+    throw new Error("Missing ODDS_API_KEY in Script Properties.");
+  }
+
+  const url =
+    "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds" +
+    "?apiKey=" + apiKey +
+    "&regions=us" +
+    "&markets=h2h" +
+    "&oddsFormat=american" +
+    "&bookmakers=draftkings,fanduel";
+
+  const response = UrlFetchApp.fetch(url);
+  const data = JSON.parse(response.getContentText());
+
+  if (!Array.isArray(data)) {
+    throw new Error("Odds API returned non-array response: " + response.getContentText());
+  }
+
+  const snapshotTime = Utilities.formatDate(
+    new Date(),
+    "America/New_York",
+    "yyyy-MM-dd HH:mm:ss"
+  );
+
+  const headers = [
+    "Snapshot Time",
+    "Game ID",
+    "Commence Time",
+    "Away Team",
+    "Home Team",
+    "Bookmaker",
+    "Away ML",
+    "Home ML",
+    "Source"
+  ];
+
+  const rows = [headers];
+
+  data.forEach(game => {
+    const gameId = game.id || "";
+    const commenceTime = game.commence_time || "";
+    const awayTeam = game.away_team || "";
+    const homeTeam = game.home_team || "";
+
+    const bookmakers = game.bookmakers || [];
+
+    bookmakers.forEach(book => {
+      const markets = book.markets || [];
+      const market = markets.find(market => market.key === "h2h");
+      if (!market) return;
+
+      let awayML = "";
+      let homeML = "";
+
+      const outcomes = market.outcomes || [];
+
+      outcomes.forEach(outcome => {
+        if (outcome.name === awayTeam) awayML = outcome.price;
+        if (outcome.name === homeTeam) homeML = outcome.price;
+      });
+
+      rows.push([
+        snapshotTime,
+        gameId,
+        commenceTime,
+        awayTeam,
+        homeTeam,
+        book.title,
+        awayML,
+        homeML,
+        "The Odds API"
+      ]);
+    });
+  });
+
+  rawSheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+
+  if (historySheet.getLastRow() === 0) {
+    historySheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+
+  const historyRows = rows.slice(1);
+
+  if (historyRows.length > 0) {
+    historySheet
+      .getRange(historySheet.getLastRow() + 1, 1, historyRows.length, headers.length)
+      .setValues(historyRows);
+  }
+}
+
+RESULTS.GS
+
+function importResults() {
+  const sheet = getOrCreateSheet("RAW_Results");
+  sheet.clearContents();
+
+  const today = Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+
+  const url =
+    "https://statsapi.mlb.com/api/v1/schedule" +
+    "?sportId=1" +
+    "&date=" + today;
+
+  const data = MLB_API(url);
+
+  const rows = [[
+    "Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Away Score",
+    "Home Score",
+    "Winner",
+    "Status",
+    "Final?"
+  ]];
+
+  const games = data.dates[0]?.games || [];
+
+  games.forEach(game => {
+    const awayTeam = game.teams.away.team.name;
+    const homeTeam = game.teams.home.team.name;
+    const awayScore = game.teams.away.score ?? "";
+    const homeScore = game.teams.home.score ?? "";
+    const status = game.status.detailedState || "";
+    const isFinal = status === "Final" || status === "Game Over";
+
+    let winner = "";
+
+    if (isFinal && awayScore !== "" && homeScore !== "") {
+      winner = awayScore > homeScore ? awayTeam : homeTeam;
+    }
+
+    rows.push([
+      today,
+      game.gamePk,
+      awayTeam,
+      homeTeam,
+      awayScore,
+      homeScore,
+      winner,
+      status,
+      isFinal
+    ]);
+  });
+
+  sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+HISTORY.GS
+
+function appendHistorySnapshot() {
+  const historySheet = getOrCreateSheet("HISTORY");
+  const archiveSheet = getOrCreateSheet("HISTORY_ARCHIVE");
+
+  const matrixSheet = getOrCreateSheet("MODEL_MATRIX");
+  const matrixValues = matrixSheet.getDataRange().getValues();
+
+  if (matrixValues.length < 2) return;
+
+  const matrixHeaders = matrixValues[0];
+  const matrixRows = matrixValues.slice(1);
+
+  const resultsByGameId = sheetToLookup("RAW_Results", "Game ID");
+
+  const historyHeaders = getHistoryBaseHeaders().concat(
+    matrixHeaders.map(header => "MM_" + header)
+  );
+
+  ensureExactHistoryHeaders(historySheet, historyHeaders);
+  ensureExactHistoryHeaders(archiveSheet, historyHeaders);
+
+  const existingGameIds = getExistingHistoryGameIds(historySheet);
+
+  const snapshotTime = Utilities.formatDate(
+    new Date(),
+    "America/New_York",
+    "yyyy-MM-dd HH:mm:ss"
+  );
+
+  const rowsToAppend = [];
+
+  matrixRows.forEach(matrixRow => {
+    const row = rowArrayToObject(matrixHeaders, matrixRow);
+
+    const gameId = row["Game ID"];
+    if (!gameId) return;
+    if (existingGameIds.has(String(gameId))) return;
+
+    const result = resultsByGameId[gameId] || {};
+
+    const isFinal = isFinalResult(result);
+    if (!isFinal) return;
+
+    const awayTeam = row["Away Team"];
+    const homeTeam = row["Home Team"];
+    const winner = result["Winner"];
+    const modelPick = row["Model Pick"];
+
+    const modelPickSide =
+      modelPick === awayTeam ? "Away" :
+      modelPick === homeTeam ? "Home" :
+      "Coin Flip";
+
+    const gameWinnerCorrect = modelPick === winner;
+
+    const awayML = parseHistoryNumber(row["Away ML"]);
+    const homeML = parseHistoryNumber(row["Home ML"]);
+
+    const awayMarketProbability = americanOddsToHistoryProbability(awayML);
+    const homeMarketProbability = americanOddsToHistoryProbability(homeML);
+
+    const marketFavorite = getMarketFavorite(awayTeam, homeTeam, awayML, homeML);
+    const marketUnderdog = getMarketUnderdog(awayTeam, homeTeam, awayML, homeML);
+
+    const modelPickML =
+      modelPick === awayTeam ? awayML :
+      modelPick === homeTeam ? homeML :
+      "";
+
+    const modelPickMarketProbability =
+      modelPick === awayTeam ? awayMarketProbability :
+      modelPick === homeTeam ? homeMarketProbability :
+      "";
+
+    const modelPickType =
+      modelPick === marketFavorite ? "Favorite" :
+      modelPick === marketUnderdog ? "Underdog" :
+      "None";
+
+    const underdogPick = modelPickType === "Underdog";
+    const favoritePick = modelPickType === "Favorite";
+
+    const underdogWon = underdogPick && gameWinnerCorrect;
+    const favoriteWon = favoritePick && gameWinnerCorrect;
+
+    const bestEdge = findBestEdge(row);
+
+    const baseRow = [
+      snapshotTime,
+      gameId,
+      row["Date"],
+
+      awayTeam,
+      homeTeam,
+      result["Away Score"],
+      result["Home Score"],
+      winner,
+
+      modelPick,
+      modelPickSide,
+      gameWinnerCorrect,
+
+      row["Away Model Score"],
+      row["Home Model Score"],
+      row["Confidence"],
+
+      "", // Away Model Implied Probability - future calibrated value
+      "", // Home Model Implied Probability - future calibrated value
+      "", // Model Pick Implied Probability - future calibrated value
+
+      row["Away ML"],
+      row["Home ML"],
+      awayMarketProbability,
+      homeMarketProbability,
+      modelPickMarketProbability,
+
+      marketFavorite,
+      marketUnderdog,
+      modelPickML,
+      modelPickType,
+
+      underdogPick,
+      underdogWon,
+      favoritePick,
+      favoriteWon,
+
+      "", // Projected Edge % - future calibrated value
+      "", // Beat Market? - future calibrated value
+
+      bestEdge.name,
+      bestEdge.value,
+      calculateFlatBetProfit(modelPickML, gameWinnerCorrect),
+
+      isFinal,
+      "MODEL_MATRIX + RAW_Results + FULL_FEATURE_SNAPSHOT"
+    ];
+
+    rowsToAppend.push(baseRow.concat(matrixRow));
+  });
+
+  if (rowsToAppend.length > 0) {
+    appendHistoryRows(historySheet, rowsToAppend, historyHeaders.length);
+    appendHistoryRows(archiveSheet, rowsToAppend, historyHeaders.length);
+  }
+}
+
+
+function getHistoryBaseHeaders() {
+  return [
+    "Snapshot Time",
+    "Game ID",
+    "Game Date",
+
+    "Away Team",
+    "Home Team",
+    "Away Score",
+    "Home Score",
+    "Winner",
+
+    "Model Pick",
+    "Model Pick Side",
+    "Game Winner Correct?",
+
+    "Away Model Score",
+    "Home Model Score",
+    "Model Strength",
+
+    "Away Model Implied Probability",
+    "Home Model Implied Probability",
+    "Model Pick Implied Probability",
+
+    "Away ML",
+    "Home ML",
+    "Away Market Implied Probability",
+    "Home Market Implied Probability",
+    "Model Pick Market Implied Probability",
+
+    "Market Favorite",
+    "Market Underdog",
+    "Model Pick ML",
+    "Model Pick Type",
+
+    "Underdog Pick?",
+    "Underdog Won?",
+    "Favorite Pick?",
+    "Favorite Won?",
+
+    "Projected Edge %",
+    "Beat Market?",
+
+    "Largest Factor",
+    "Largest Factor Value",
+    "Flat Bet Profit",
+
+    "Final?",
+    "Source"
+  ];
+}
+
+
+function resetHistoryTables() {
+  const historySheet = getOrCreateSheet("HISTORY");
+  const archiveSheet = getOrCreateSheet("HISTORY_ARCHIVE");
+
+  const matrixSheet = getOrCreateSheet("MODEL_MATRIX");
+  const matrixValues = matrixSheet.getDataRange().getValues();
+
+  const matrixHeaders = matrixValues.length > 0 ? matrixValues[0] : [];
+
+  const headers = getHistoryBaseHeaders().concat(
+    matrixHeaders.map(header => "MM_" + header)
+  );
+
+  historySheet.clearContents();
+  archiveSheet.clearContents();
+
+  historySheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  archiveSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+}
+
+
+function ensureExactHistoryHeaders(sheet, headers) {
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return;
+  }
+
+  const currentHeaders = sheet
+    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length))
+    .getValues()[0];
+
+  const currentText = currentHeaders.join("|");
+  const expectedText = headers.join("|");
+
+  if (currentText !== expectedText) {
+    throw new Error(
+      sheet.getName() +
+      " headers do not match current HISTORY schema. Run resetHistoryTables only if you intentionally want to clear/rebuild headers."
+    );
+  }
+}
+
+
+function rowArrayToObject(headers, row) {
+  const obj = {};
+
+  headers.forEach((header, index) => {
+    obj[header] = row[index];
+  });
+
+  return obj;
+}
+
+
+function isFinalResult(result) {
+  const finalFlag = result["Final?"];
+  const status = result["Status"];
+
+  return (
+    finalFlag === true ||
+    finalFlag === "TRUE" ||
+    finalFlag === "Yes" ||
+    finalFlag === "Final" ||
+    status === "Final" ||
+    status === "Game Over"
+  );
+}
+
+
+function getExistingHistoryGameIds(sheet) {
+  const values = sheet.getDataRange().getValues();
+  const gameIds = new Set();
+
+  if (values.length < 2) return gameIds;
+
+  for (let i = 1; i < values.length; i++) {
+    const gameId = values[i][1];
+    if (gameId) gameIds.add(String(gameId));
+  }
+
+  return gameIds;
+}
+
+
+function appendHistoryRows(sheet, rows, columnCount) {
+  sheet
+    .getRange(sheet.getLastRow() + 1, 1, rows.length, columnCount)
+    .setValues(rows);
+}
+
+
+function getMarketFavorite(awayTeam, homeTeam, awayML, homeML) {
+  if (awayML === "" || homeML === "") return "";
+
+  if (awayML < homeML) return awayTeam;
+  if (homeML < awayML) return homeTeam;
+
+  return "Even";
+}
+
+
+function getMarketUnderdog(awayTeam, homeTeam, awayML, homeML) {
+  if (awayML === "" || homeML === "") return "";
+
+  if (awayML > homeML) return awayTeam;
+  if (homeML > awayML) return homeTeam;
+
+  return "Even";
+}
+
+
+function americanOddsToHistoryProbability(odds) {
+  odds = parseHistoryNumber(odds);
+
+  if (odds === "") return "";
+
+  if (odds < 0) {
+    return Number((Math.abs(odds) / (Math.abs(odds) + 100)).toFixed(4));
+  }
+
+  return Number((100 / (odds + 100)).toFixed(4));
+}
+
+
+function calculateFlatBetProfit(americanOdds, won) {
+  const odds = parseHistoryNumber(americanOdds);
+
+  if (odds === "") return "";
+
+  if (!won) return -100;
+
+  if (odds > 0) {
+    return odds;
+  }
+
+  return Number((10000 / Math.abs(odds)).toFixed(2));
+}
+
+
+function parseHistoryNumber(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const num = Number(value);
+
+  return isNaN(num) ? "" : num;
+}
+
+MODELMATRIX.GS
+
+function buildModelMatrix() {
+  const sheet = getOrCreateSheet("MODEL_MATRIX");
+  sheet.clearContents();
+
+  const schedule = getSheetRows("RAW_Schedule");
+  if (schedule.length === 0) return;
+
+  const teamHitting = sheetToLookup("RAW_Team_Hitting", "Team");
+  const teamPitching = sheetToLookup("RAW_Team_Pitching", "Team");
+  const teamQuality = sheetToLookup("RAW_Team_Quality", "Team");
+  const teamSplits = sheetToLookup("RAW_Team_Splits", "Team");
+  const teamHomeAway = sheetToLookup("RAW_Team_Home_Away_Splits", "Team");
+  const recentForm = sheetToLookup("RAW_Recent_Form", "Team");
+
+  const starters = sheetToLookup("RAW_Starting_Pitchers", "Player ID");
+  const starterRecent = sheetToLookup("RAW_Starter_Recent_Form", "Player ID");
+  const starterHomeAway = sheetToLookup("RAW_Starter_Home_Away_Splits", "Player ID");
+
+  const bullpenQuality = sheetToLookup("RAW_Bullpen_Quality", "Team");
+  const bullpenUsage = sheetToLookup("RAW_Bullpen", "Team");
+  const bullpenFatigue = sheetToLookup("RAW_Bullpen_Fatigue", "Team");
+
+  const parkFactors = sheetToLookup("RAW_Park_Factors", "Venue");
+  const weather = sheetToLookup("RAW_Weather", "Game ID");
+  const odds = getLatestOddsByMatchup();
+
+  const headers = [
+    "Date", "Game ID", "Away Team", "Home Team", "Away SP", "Home SP",
+    "Away SP ID", "Home SP ID", "Away SP Hand", "Home SP Hand", "Venue", "Status",
+
+    "Away Runs/Game", "Home Runs/Game", "Runs/Game Edge",
+    "Away Run Differential", "Home Run Differential", "Run Differential Edge",
+    "Away OPS", "Home OPS", "OPS Edge",
+    "Away OBP", "Home OBP", "OBP Edge",
+    "Away SLG", "Home SLG", "SLG Edge",
+    "Away BABIP", "Home BABIP", "BABIP Edge",
+
+    "Away OPS vs SP Hand", "Home OPS vs SP Hand", "OPS vs Hand Edge",
+    "Away OPS vs RHP", "Home OPS vs RHP",
+    "Away OPS vs LHP", "Home OPS vs LHP",
+
+    "Away Team ERA", "Home Team ERA", "Team ERA Edge",
+    "Away Team WHIP", "Home Team WHIP", "Team WHIP Edge",
+    "Away Team K/9", "Home Team K/9", "Team K/9 Edge",
+    "Away Team BB/9", "Home Team BB/9", "Team BB/9 Edge",
+    "Away Team HR/9", "Home Team HR/9", "Team HR/9 Edge",
+
+    "Away Road OPS", "Home Home OPS", "Split OPS Edge",
+    "Away Road ERA", "Home Home ERA", "Split ERA Edge",
+    "Away Road WHIP", "Home Home WHIP", "Split WHIP Edge",
+
+    "Away Starter ERA", "Home Starter ERA", "Starter ERA Edge",
+    "Away Starter WHIP", "Home Starter WHIP", "Starter WHIP Edge",
+    "Away Starter K/BB", "Home Starter K/BB", "Starter K/BB Edge",
+    "Away Starter K/9", "Home Starter K/9", "Starter K/9 Edge",
+    "Away Starter BB/9", "Home Starter BB/9", "Starter BB/9 Edge",
+    "Away Starter HR/9", "Home Starter HR/9", "Starter HR/9 Edge",
+
+    "Away Starter ERA Last 3", "Home Starter ERA Last 3", "Starter ERA Last 3 Edge",
+    "Away Starter WHIP Last 3", "Home Starter WHIP Last 3", "Starter WHIP Last 3 Edge",
+    "Away Starter K/BB Last 3", "Home Starter K/BB Last 3", "Starter K/BB Last 3 Edge",
+    "Away Starter Avg IP Last 3", "Home Starter Avg IP Last 3", "Starter Avg IP Last 3 Edge",
+
+    "Away Starter ERA Last 5", "Home Starter ERA Last 5", "Starter ERA Last 5 Edge",
+    "Away Starter WHIP Last 5", "Home Starter WHIP Last 5", "Starter WHIP Last 5 Edge",
+    "Away Starter K/BB Last 5", "Home Starter K/BB Last 5", "Starter K/BB Last 5 Edge",
+    "Away Starter Avg IP Last 5", "Home Starter Avg IP Last 5", "Starter Avg IP Last 5 Edge",
+
+    "Away Road Starter ERA", "Home Home Starter ERA", "Starter Split ERA Edge",
+    "Away Road Starter WHIP", "Home Home Starter WHIP", "Starter Split WHIP Edge",
+    "Away Road Starter K/BB", "Home Home Starter K/BB", "Starter Split K/BB Edge",
+
+    "Away Bullpen ERA", "Home Bullpen ERA", "Bullpen ERA Edge",
+    "Away Bullpen WHIP", "Home Bullpen WHIP", "Bullpen WHIP Edge",
+    "Away Bullpen K/9", "Home Bullpen K/9", "Bullpen K/9 Edge",
+    "Away Bullpen BB/9", "Home Bullpen BB/9", "Bullpen BB/9 Edge",
+    "Away Bullpen HR/9", "Home Bullpen HR/9", "Bullpen HR/9 Edge",
+
+    "Away Bullpen Save %", "Home Bullpen Save %", "Bullpen Save % Edge",
+    "Away Bullpen Blown Saves", "Home Bullpen Blown Saves", "Bullpen Blown Saves Edge",
+    "Away Bullpen Inherited Scored %", "Home Bullpen Inherited Scored %", "Bullpen Inherited Scored % Edge",
+    "Away Bullpen Avg Leverage Index", "Home Bullpen Avg Leverage Index", "Bullpen Avg Leverage Index Edge",
+
+    "Away Bullpen IP Last 3", "Home Bullpen IP Last 3", "Bullpen IP Last 3 Edge",
+    "Away Bullpen IP Last 7", "Home Bullpen IP Last 7", "Bullpen IP Last 7 Edge",
+    "Away Bullpen Pitches Last 3", "Home Bullpen Pitches Last 3", "Bullpen Pitches Last 3 Edge",
+    "Away Bullpen Pitches Last 7", "Home Bullpen Pitches Last 7", "Bullpen Pitches Last 7 Edge",
+
+    "Away Team OPS Last 7", "Home Team OPS Last 7", "Team OPS Last 7 Edge",
+    "Away Team OPS Last 14", "Home Team OPS Last 14", "Team OPS Last 14 Edge",
+    "Away Team OPS Last 30", "Home Team OPS Last 30", "Team OPS Last 30 Edge",
+    "Away Team ERA Last 7", "Home Team ERA Last 7", "Team ERA Last 7 Edge",
+    "Away Team ERA Last 14", "Home Team ERA Last 14", "Team ERA Last 14 Edge",
+    "Away Team ERA Last 30", "Home Team ERA Last 30", "Team ERA Last 30 Edge",
+
+    "Park Factor Runs", "Park Factor HR", "Park Factor Hits",
+    "Temperature", "Weather Condition", "Wind",
+
+    "Away ML", "Home ML", "Away Implied Probability", "Home Implied Probability",
+
+    "Away Model Score", "Home Model Score", "Model Pick", "Confidence"
+  ];
+
+  const output = [headers];
+
+  schedule.forEach(game => {
+    const awayTeam = game["Away Team"];
+    const homeTeam = game["Home Team"];
+    const awaySpId = game["Away SP ID"];
+    const homeSpId = game["Home SP ID"];
+    const venue = game["Venue"];
+    const gameId = game["Game ID"];
+
+    const awayHit = teamHitting[awayTeam] || {};
+    const homeHit = teamHitting[homeTeam] || {};
+    const awayPitch = teamPitching[awayTeam] || {};
+    const homePitch = teamPitching[homeTeam] || {};
+    const awayQuality = teamQuality[awayTeam] || {};
+    const homeQuality = teamQuality[homeTeam] || {};
+    const awaySplits = teamSplits[awayTeam] || {};
+    const homeSplits = teamSplits[homeTeam] || {};
+    const awayHA = teamHomeAway[awayTeam] || {};
+    const homeHA = teamHomeAway[homeTeam] || {};
+    const awayRecent = recentForm[awayTeam] || {};
+    const homeRecent = recentForm[homeTeam] || {};
+
+    const awayStarter = starters[awaySpId] || {};
+    const homeStarter = starters[homeSpId] || {};
+    const awayStarterRecent = starterRecent[awaySpId] || {};
+    const homeStarterRecent = starterRecent[homeSpId] || {};
+    const awayStarterHA = starterHomeAway[awaySpId] || {};
+    const homeStarterHA = starterHomeAway[homeSpId] || {};
+
+    const awayBPQ = bullpenQuality[awayTeam] || {};
+    const homeBPQ = bullpenQuality[homeTeam] || {};
+    const awayBPU = bullpenUsage[awayTeam] || {};
+    const homeBPU = bullpenUsage[homeTeam] || {};
+    const awayBPF = bullpenFatigue[awayTeam] || {};
+    const homeBPF = bullpenFatigue[homeTeam] || {};
+
+    const park = parkFactors[venue] || {};
+    const wx = weather[gameId] || {};
+    const market = odds[awayTeam + "|" + homeTeam] || {};
+
+    const awayOpsVsHand = getOpsVsHand(awaySplits, game["Home SP Hand"]);
+    const homeOpsVsHand = getOpsVsHand(homeSplits, game["Away SP Hand"]);
+
+    output.push([
+      game["Date"], gameId, awayTeam, homeTeam, game["Away SP"], game["Home SP"],
+      awaySpId, homeSpId, game["Away SP Hand"], game["Home SP Hand"], venue, game["Status"],
+
+      awayHit["Runs/Game"], homeHit["Runs/Game"], edge(awayHit["Runs/Game"], homeHit["Runs/Game"], "higher"),
+      awayQuality["Run Differential"], homeQuality["Run Differential"], edge(awayQuality["Run Differential"], homeQuality["Run Differential"], "higher"),
+      awayHit["OPS"], homeHit["OPS"], edge(awayHit["OPS"], homeHit["OPS"], "higher"),
+      awayHit["OBP"], homeHit["OBP"], edge(awayHit["OBP"], homeHit["OBP"], "higher"),
+      awayHit["SLG"], homeHit["SLG"], edge(awayHit["SLG"], homeHit["SLG"], "higher"),
+      awayHit["BABIP"], homeHit["BABIP"], edge(awayHit["BABIP"], homeHit["BABIP"], "higher"),
+
+      awayOpsVsHand, homeOpsVsHand, edge(awayOpsVsHand, homeOpsVsHand, "higher"),
+      awaySplits["OPS vs RHP"], homeSplits["OPS vs RHP"],
+      awaySplits["OPS vs LHP"], homeSplits["OPS vs LHP"],
+
+      awayPitch["ERA"], homePitch["ERA"], edge(awayPitch["ERA"], homePitch["ERA"], "lower"),
+      awayPitch["WHIP"], homePitch["WHIP"], edge(awayPitch["WHIP"], homePitch["WHIP"], "lower"),
+      awayPitch["K/9"], homePitch["K/9"], edge(awayPitch["K/9"], homePitch["K/9"], "higher"),
+      awayPitch["BB/9"], homePitch["BB/9"], edge(awayPitch["BB/9"], homePitch["BB/9"], "lower"),
+      awayPitch["HR/9"], homePitch["HR/9"], edge(awayPitch["HR/9"], homePitch["HR/9"], "lower"),
+
+      awayHA["Road OPS"], homeHA["Home OPS"], edge(awayHA["Road OPS"], homeHA["Home OPS"], "higher"),
+      awayHA["Road ERA"], homeHA["Home ERA"], edge(awayHA["Road ERA"], homeHA["Home ERA"], "lower"),
+      awayHA["Road WHIP"], homeHA["Home WHIP"], edge(awayHA["Road WHIP"], homeHA["Home WHIP"], "lower"),
+
+      awayStarter["ERA"], homeStarter["ERA"], edge(awayStarter["ERA"], homeStarter["ERA"], "lower"),
+      awayStarter["WHIP"], homeStarter["WHIP"], edge(awayStarter["WHIP"], homeStarter["WHIP"], "lower"),
+      awayStarter["K/BB"], homeStarter["K/BB"], edge(awayStarter["K/BB"], homeStarter["K/BB"], "higher"),
+      awayStarter["K/9"], homeStarter["K/9"], edge(awayStarter["K/9"], homeStarter["K/9"], "higher"),
+      awayStarter["BB/9"], homeStarter["BB/9"], edge(awayStarter["BB/9"], homeStarter["BB/9"], "lower"),
+      awayStarter["HR/9"], homeStarter["HR/9"], edge(awayStarter["HR/9"], homeStarter["HR/9"], "lower"),
+
+      awayStarterRecent["ERA Last 3 Starts"], homeStarterRecent["ERA Last 3 Starts"], edge(awayStarterRecent["ERA Last 3 Starts"], homeStarterRecent["ERA Last 3 Starts"], "lower"),
+      awayStarterRecent["WHIP Last 3 Starts"], homeStarterRecent["WHIP Last 3 Starts"], edge(awayStarterRecent["WHIP Last 3 Starts"], homeStarterRecent["WHIP Last 3 Starts"], "lower"),
+      awayStarterRecent["K/BB Last 3 Starts"], homeStarterRecent["K/BB Last 3 Starts"], edge(awayStarterRecent["K/BB Last 3 Starts"], homeStarterRecent["K/BB Last 3 Starts"], "higher"),
+      awayStarterRecent["Avg IP Last 3 Starts"], homeStarterRecent["Avg IP Last 3 Starts"], edgeInnings(awayStarterRecent["Avg IP Last 3 Starts"], homeStarterRecent["Avg IP Last 3 Starts"], "higher"),
+
+      awayStarterRecent["ERA Last 5 Starts"], homeStarterRecent["ERA Last 5 Starts"], edge(awayStarterRecent["ERA Last 5 Starts"], homeStarterRecent["ERA Last 5 Starts"], "lower"),
+      awayStarterRecent["WHIP Last 5 Starts"], homeStarterRecent["WHIP Last 5 Starts"], edge(awayStarterRecent["WHIP Last 5 Starts"], homeStarterRecent["WHIP Last 5 Starts"], "lower"),
+      awayStarterRecent["K/BB Last 5 Starts"], homeStarterRecent["K/BB Last 5 Starts"], edge(awayStarterRecent["K/BB Last 5 Starts"], homeStarterRecent["K/BB Last 5 Starts"], "higher"),
+      awayStarterRecent["Avg IP Last 5 Starts"], homeStarterRecent["Avg IP Last 5 Starts"], edgeInnings(awayStarterRecent["Avg IP Last 5 Starts"], homeStarterRecent["Avg IP Last 5 Starts"], "higher"),
+
+      awayStarterHA["Road ERA"], homeStarterHA["Home ERA"], edge(awayStarterHA["Road ERA"], homeStarterHA["Home ERA"], "lower"),
+      awayStarterHA["Road WHIP"], homeStarterHA["Home WHIP"], edge(awayStarterHA["Road WHIP"], homeStarterHA["Home WHIP"], "lower"),
+      awayStarterHA["Road K/BB"], homeStarterHA["Home K/BB"], edge(awayStarterHA["Road K/BB"], homeStarterHA["Home K/BB"], "higher"),
+
+      awayBPQ["Bullpen ERA"], homeBPQ["Bullpen ERA"], edge(awayBPQ["Bullpen ERA"], homeBPQ["Bullpen ERA"], "lower"),
+      awayBPQ["Bullpen WHIP"], homeBPQ["Bullpen WHIP"], edge(awayBPQ["Bullpen WHIP"], homeBPQ["Bullpen WHIP"], "lower"),
+      awayBPQ["Bullpen K/9"], homeBPQ["Bullpen K/9"], edge(awayBPQ["Bullpen K/9"], homeBPQ["Bullpen K/9"], "higher"),
+      awayBPQ["Bullpen BB/9"], homeBPQ["Bullpen BB/9"], edge(awayBPQ["Bullpen BB/9"], homeBPQ["Bullpen BB/9"], "lower"),
+      awayBPQ["Bullpen HR/9"], homeBPQ["Bullpen HR/9"], edge(awayBPQ["Bullpen HR/9"], homeBPQ["Bullpen HR/9"], "lower"),
+
+      awayBPU["Save %"], homeBPU["Save %"], edgePercent(awayBPU["Save %"], homeBPU["Save %"], "higher"),
+      awayBPU["Blown Saves"], homeBPU["Blown Saves"], edge(awayBPU["Blown Saves"], homeBPU["Blown Saves"], "lower"),
+      awayBPU["Inherited Scored %"], homeBPU["Inherited Scored %"], edgePercent(awayBPU["Inherited Scored %"], homeBPU["Inherited Scored %"], "lower"),
+      awayBPU["Avg Leverage Index"], homeBPU["Avg Leverage Index"], edge(awayBPU["Avg Leverage Index"], homeBPU["Avg Leverage Index"], "higher"),
+
+      awayBPF["Bullpen IP Last 3 Days"], homeBPF["Bullpen IP Last 3 Days"], edgeInnings(awayBPF["Bullpen IP Last 3 Days"], homeBPF["Bullpen IP Last 3 Days"], "lower"),
+      awayBPF["Bullpen IP Last 7 Days"], homeBPF["Bullpen IP Last 7 Days"], edgeInnings(awayBPF["Bullpen IP Last 7 Days"], homeBPF["Bullpen IP Last 7 Days"], "lower"),
+      awayBPF["Bullpen Pitches Last 3 Days"], homeBPF["Bullpen Pitches Last 3 Days"], edge(awayBPF["Bullpen Pitches Last 3 Days"], homeBPF["Bullpen Pitches Last 3 Days"], "lower"),
+      awayBPF["Bullpen Pitches Last 7 Days"], homeBPF["Bullpen Pitches Last 7 Days"], edge(awayBPF["Bullpen Pitches Last 7 Days"], homeBPF["Bullpen Pitches Last 7 Days"], "lower"),
+
+      awayRecent["OPS Last 7"], homeRecent["OPS Last 7"], edge(awayRecent["OPS Last 7"], homeRecent["OPS Last 7"], "higher"),
+      awayRecent["OPS Last 14"], homeRecent["OPS Last 14"], edge(awayRecent["OPS Last 14"], homeRecent["OPS Last 14"], "higher"),
+      awayRecent["OPS Last 30"], homeRecent["OPS Last 30"], edge(awayRecent["OPS Last 30"], homeRecent["OPS Last 30"], "higher"),
+      awayRecent["ERA Last 7"], homeRecent["ERA Last 7"], edge(awayRecent["ERA Last 7"], homeRecent["ERA Last 7"], "lower"),
+      awayRecent["ERA Last 14"], homeRecent["ERA Last 14"], edge(awayRecent["ERA Last 14"], homeRecent["ERA Last 14"], "lower"),
+      awayRecent["ERA Last 30"], homeRecent["ERA Last 30"], edge(awayRecent["ERA Last 30"], homeRecent["ERA Last 30"], "lower"),
+
+      park["Run Factor"], park["HR Factor"], park["Hit Factor"],
+      wx["Temperature"], wx["Condition"], wx["Wind"],
+
+      market.awayML || "", market.homeML || "",
+      americanOddsToProbability(market.awayML),
+      americanOddsToProbability(market.homeML),
+
+      "", "", "", ""
+    ]);
+  });
+
+  sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
+}
+
+
+function getSheetRows(sheetName) {
+  const sheet = getOrCreateSheet(sheetName);
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+
+  const headers = values[0];
+
+  return values.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((header, index) => {
+      obj[header] = row[index];
+    });
+    return obj;
+  });
+}
+
+
+function sheetToLookup(sheetName, keyColumn) {
+  const rows = getSheetRows(sheetName);
+  const lookup = {};
+
+  rows.forEach(row => {
+    const key = row[keyColumn];
+    if (key !== "" && key !== undefined && key !== null) {
+      lookup[key] = row;
+    }
+  });
+
+  return lookup;
+}
+
+
+function getLatestOddsByMatchup() {
+  const rows = getSheetRows("RAW_Odds");
+  const lookup = {};
+
+  rows.forEach(row => {
+    const key = row["Away Team"] + "|" + row["Home Team"];
+    lookup[key] = {
+      awayML: row["Away ML"],
+      homeML: row["Home ML"]
+    };
+  });
+
+  return lookup;
+}
+
+
+function getOpsVsHand(teamSplitRow, opponentStarterHand) {
+  if (opponentStarterHand === "R") return teamSplitRow["OPS vs RHP"] || "";
+  if (opponentStarterHand === "L") return teamSplitRow["OPS vs LHP"] || "";
+  return "";
+}
+
+
+function edge(awayValue, homeValue, direction) {
+  const away = parseNumber(awayValue);
+  const home = parseNumber(homeValue);
+
+  if (away === "" || home === "") return "";
+
+  if (direction === "lower") {
+    return roundMatrix(home - away, 4);
+  }
+
+  return roundMatrix(away - home, 4);
+}
+
+
+function edgePercent(awayValue, homeValue, direction) {
+  const away = parseNumber(String(awayValue).replace("%", ""));
+  const home = parseNumber(String(homeValue).replace("%", ""));
+
+  if (away === "" || home === "") return "";
+
+  if (direction === "lower") {
+    return roundMatrix(home - away, 4);
+  }
+
+  return roundMatrix(away - home, 4);
+}
+
+
+function edgeInnings(awayValue, homeValue, direction) {
+  const away = inningsStringToDecimal(awayValue);
+  const home = inningsStringToDecimal(homeValue);
+
+  if (away === "" || home === "") return "";
+
+  if (direction === "lower") {
+    return roundMatrix(home - away, 4);
+  }
+
+  return roundMatrix(away - home, 4);
+}
+
+
+function inningsStringToDecimal(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const parts = value.toString().split(".");
+  const full = Number(parts[0] || 0);
+  const outs = Number(parts[1] || 0);
+
+  return full + outs / 3;
+}
+
+
+function parseNumber(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const cleaned = value.toString().replace("%", "").trim();
+  const num = Number(cleaned);
+
+  return isNaN(num) ? "" : num;
+}
+
+
+function roundMatrix(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+
+function americanOddsToProbability(odds) {
+  const value = parseNumber(odds);
+  if (value === "") return "";
+
+  if (value < 0) {
+    return roundMatrix(Math.abs(value) / (Math.abs(value) + 100), 4);
+  }
+
+  return roundMatrix(100 / (value + 100), 4);
+}
+
+SCORING.GS
+
+function scoreModelMatrix() {
+  const sheet = getOrCreateSheet("MODEL_MATRIX");
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) return;
+
+  const headers = values[0];
+  const rows = values.slice(1);
+  const settings = getActiveModelSettings();
+
+  const edgeStats = calculateEdgeStats(rows, headers, settings);
+
+  const awayScoreCol = headers.indexOf("Away Model Score");
+  const homeScoreCol = headers.indexOf("Home Model Score");
+  const pickCol = headers.indexOf("Model Pick");
+  const confidenceCol = headers.indexOf("Confidence");
+
+  const updates = [];
+
+  rows.forEach(row => {
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    settings.forEach(setting => {
+      const edgeColName = setting.stat + " Edge";
+      const edgeCol = headers.indexOf(edgeColName);
+      if (edgeCol === -1) return;
+
+      const rawEdge = parseNumber(row[edgeCol]);
+      if (rawEdge === "") return;
+
+      const stats = edgeStats[edgeColName];
+      if (!stats || stats.stdDev === 0) return;
+
+      const zScore = (rawEdge - stats.mean) / stats.stdDev;
+      totalScore += zScore * setting.weight;
+      totalWeight += setting.weight;
+    });
+
+    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+
+    const awayScore = roundScore(finalScore, 4);
+    const homeScore = roundScore(finalScore * -1, 4);
+
+    const awayTeam = row[headers.indexOf("Away Team")];
+    const homeTeam = row[headers.indexOf("Home Team")];
+
+    const pick =
+      finalScore > 0 ? awayTeam :
+      finalScore < 0 ? homeTeam :
+      "Coin Flip";
+
+    const confidence = Math.min(100, Math.round(Math.abs(finalScore) * 25));
+
+    updates.push([awayScore, homeScore, pick, confidence]);
+  });
+
+  sheet.getRange(2, awayScoreCol + 1, updates.length, 4).setValues(updates);
+}
+
+
+function calculateEdgeStats(rows, headers, settings) {
+  const edgeStats = {};
+
+  settings.forEach(setting => {
+    const edgeColName = setting.stat + " Edge";
+    const edgeCol = headers.indexOf(edgeColName);
+    if (edgeCol === -1) return;
+
+    const values = rows
+      .map(row => parseNumber(row[edgeCol]))
+      .filter(value => value !== "");
+
+    if (values.length === 0) return;
+
+    const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+
+    const variance =
+      values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) /
+      values.length;
+
+    edgeStats[edgeColName] = {
+      mean: mean,
+      stdDev: Math.sqrt(variance)
+    };
+  });
+
+  return edgeStats;
+}
+
+
+function getActiveModelSettings() {
+  const sheet = getOrCreateSheet("Settings");
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) return [];
+
+  const headers = values[0];
+  const rows = values.slice(1);
+
+  const statCol = headers.indexOf("Stat");
+  const activeCol = headers.indexOf("Active");
+  const weightCol = headers.indexOf("Weight");
+
+  const settings = [];
+
+  rows.forEach(row => {
+    const stat = row[statCol];
+    const active = row[activeCol];
+    const weight = Number(row[weightCol] || 0);
+
+    if ((active === true || active === "TRUE") && stat && weight > 0) {
+      settings.push({
+        stat: stat,
+        weight: weight
+      });
+    }
+  });
+
+  return settings;
+}
+
+
+function parseNumber(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const cleaned = value.toString().replace("%", "").trim();
+  const num = Number(cleaned);
+
+  return isNaN(num) ? "" : num;
+}
+
+
+function roundScore(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+function debugOneGameScore() {
+  const sheet = getOrCreateSheet("MODEL_MATRIX");
+  const values = sheet.getDataRange().getValues();
+
+  const headers = values[0];
+  const row = values[1];
+
+  const settings = getActiveModelSettings();
+  const edgeStats = calculateEdgeStats(values.slice(1), headers, settings);
+
+  Logger.log("GAME: " + row[headers.indexOf("Away Team")] + " @ " + row[headers.indexOf("Home Team")]);
+
+  settings.forEach(setting => {
+    const edgeColName = setting.stat + " Edge";
+    const edgeCol = headers.indexOf(edgeColName);
+
+    if (edgeCol === -1) {
+      Logger.log(setting.stat + " | NOT FOUND");
+      return;
+    }
+
+    const rawEdge = parseNumber(row[edgeCol]);
+    const stats = edgeStats[edgeColName];
+
+    if (rawEdge === "" || !stats || stats.stdDev === 0) {
+      Logger.log(setting.stat + " | skipped");
+      return;
+    }
+
+    const zScore = (rawEdge - stats.mean) / stats.stdDev;
+    const contribution = zScore * setting.weight;
+
+    Logger.log(
+      setting.stat +
+      " | weight=" + setting.weight +
+      " | rawEdge=" + rawEdge +
+      " | z=" + zScore.toFixed(4) +
+      " | contribution=" + contribution.toFixed(4)
+    );
+  });
+}
+
+function buildTodayView() {
+  const sheet = getOrCreateSheet("Today");
+  sheet.clearContents();
+
+  const rows = getSheetRows("Model_Matrix");
+
+  const output = [[
+    "Game",
+    "Pick",
+    "Model Strength",
+    "Pick ML",
+    "Market Implied %",
+    "Best Factor",
+    "Status"
+  ]];
+
+  rows.forEach(row => {
+    const awayTeam = row["Away Team"];
+    const homeTeam = row["Home Team"];
+    const pick = row["Model Pick"];
+
+    const awayML = row["Away ML"];
+    const homeML = row["Home ML"];
+
+    const pickML =
+      pick === awayTeam ? awayML :
+      pick === homeTeam ? homeML :
+      "";
+
+    const pickMarketProb =
+      pick === awayTeam ? americanOddsToViewProbability(awayML) :
+      pick === homeTeam ? americanOddsToViewProbability(homeML) :
+      "";
+
+    const bestEdge = findBestEdge(row);
+
+    output.push([
+      awayTeam + " @ " + homeTeam,
+      pick,
+      row["Confidence"],
+      pickML,
+      pickMarketProb === "" ? "" : Math.round(pickMarketProb * 1000) / 10 + "%",
+      bestEdge.name,
+      row["Status"]
+    ]);
+  });
+
+  sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
+  formatTodayMobile(sheet, output.length, output[0].length);
+}
+
+
+function buildDashboard() {
+  const sheet = getOrCreateSheet("DashBoard");
+  sheet.clearContents();
+
+  const historyRows = getSheetRows("HISTORY");
+  const matrixRows = getSheetRows("Model_Matrix");
+
+  const summary = buildPerformanceSummary(historyRows);
+
+  const output = [
+    ["Metric", "Value"],
+    ["Total Games Tracked", summary.totalGames],
+    ["Model Record", summary.wins + "-" + summary.losses],
+    ["Win Rate", summary.winRate],
+    ["Favorite Record", summary.favoriteWins + "-" + summary.favoriteLosses],
+    ["Underdog Record", summary.underdogWins + "-" + summary.underdogLosses],
+    ["Flat Bet Profit", summary.profit],
+    ["ROI", summary.roi],
+    ["", ""],
+    ["Today's Ranked Games", ""],
+    ["Rank", "Game", "Pick", "Strength", "Pick ML", "Best Factor", "Status"]
+  ];
+
+  const sorted = matrixRows
+    .slice()
+    .sort((a, b) => Number(b["Confidence"] || 0) - Number(a["Confidence"] || 0));
+
+  sorted.forEach((row, index) => {
+    const awayTeam = row["Away Team"];
+    const homeTeam = row["Home Team"];
+    const pick = row["Model Pick"];
+
+    const pickML =
+      pick === awayTeam ? row["Away ML"] :
+      pick === homeTeam ? row["Home ML"] :
+      "";
+
+    const bestEdge = findBestEdge(row);
+
+    output.push([
+      index + 1,
+      awayTeam + " @ " + homeTeam,
+      pick,
+      row["Confidence"],
+      pickML,
+      bestEdge.name,
+      row["Status"]
+    ]);
+  });
+
+  sheet.getRange(1, 1, output.length, 7).setValues(padRows(output, 7));
+  formatDashboard(sheet);
+}
+
+
+function buildPerformanceSummary(rows) {
+  let wins = 0;
+  let losses = 0;
+  let favoriteWins = 0;
+  let favoriteLosses = 0;
+  let underdogWins = 0;
+  let underdogLosses = 0;
+  let profit = 0;
+
+  rows.forEach(row => {
+    const correct = row["Game Winner Correct?"];
+    const pickType = row["Model Pick Type"];
+    const flatProfit = Number(row["Flat Bet Profit"]);
+
+    if (correct === true || correct === "TRUE") {
+      wins++;
+      if (pickType === "Favorite") favoriteWins++;
+      if (pickType === "Underdog") underdogWins++;
+    } else if (correct === false || correct === "FALSE") {
+      losses++;
+      if (pickType === "Favorite") favoriteLosses++;
+      if (pickType === "Underdog") underdogLosses++;
+    }
+
+    if (!isNaN(flatProfit)) {
+      profit += flatProfit;
+    }
+  });
+
+  const totalGames = wins + losses;
+  const risked = totalGames * 100;
+
+  return {
+    totalGames,
+    wins,
+    losses,
+    favoriteWins,
+    favoriteLosses,
+    underdogWins,
+    underdogLosses,
+    winRate: totalGames > 0 ? Math.round((wins / totalGames) * 1000) / 10 + "%" : "",
+    profit: Math.round(profit * 100) / 100,
+    roi: risked > 0 ? Math.round((profit / risked) * 1000) / 10 + "%" : ""
+  };
+}
+
+
+function findBestEdge(row) {
+  let best = {
+    name: "",
+    value: ""
+  };
+
+  Object.keys(row).forEach(key => {
+    if (!key.includes("Edge")) return;
+
+    const value = Number(row[key]);
+    if (isNaN(value)) return;
+
+    if (best.value === "" || Math.abs(value) > Math.abs(Number(best.value))) {
+      best = {
+        name: key,
+        value: value
+      };
+    }
+  });
+
+  return best;
+}
+
+
+function americanOddsToViewProbability(odds) {
+  const value = Number(odds);
+
+  if (isNaN(value)) return "";
+
+  if (value < 0) {
+    return Math.abs(value) / (Math.abs(value) + 100);
+  }
+
+  return 100 / (value + 100);
+}
+
+
+function padRows(rows, width) {
+  return rows.map(row => {
+    const padded = row.slice();
+    while (padded.length < width) {
+      padded.push("");
+    }
+    return padded;
+  });
+}
+
+
+function formatTodayMobile(sheet, rowCount, columnCount) {
+  sheet.setFrozenRows(1);
+
+  sheet.getRange(1, 1, 1, columnCount)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, rowCount, columnCount)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setColumnWidth(1, 160);
+  sheet.setColumnWidth(2, 130);
+  sheet.setColumnWidth(3, 90);
+  sheet.setColumnWidth(4, 80);
+  sheet.setColumnWidth(5, 100);
+  sheet.setColumnWidth(6, 160);
+  sheet.setColumnWidth(7, 90);
+
+  if (rowCount > 1) {
+    sheet.getRange(2, 1, rowCount - 1, columnCount).setFontSize(11);
+    sheet.getRange(2, 3, rowCount - 1, 1).setHorizontalAlignment("center");
+    sheet.getRange(2, 4, rowCount - 1, 2).setHorizontalAlignment("center");
+  }
+}
+
+
+function formatDashboard(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, 2)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(11, 1, 1, 7)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+PERFORMANCEDASHBOARD.GS
+
+function buildPerformanceDashboard() {
+  const sheet = getOrCreateSheet("Performance_Dashboard");
+  sheet.clearContents();
+
+  const rows = getSheetRows("HISTORY");
+  const summary = calculatePerformanceDashboardSummary(rows);
+  const factorRows = calculateFactorPerformance(rows);
+
+  const output = [
+    ["MLB Model Performance Dashboard", ""],
+    ["", ""],
+
+    ["Overall Metrics", ""],
+    ["Total Games", summary.totalGames],
+    ["Model Record", summary.wins + "-" + summary.losses],
+    ["Win Rate", summary.winRate],
+    ["Flat Bet Profit", summary.profit],
+    ["ROI", summary.roi],
+    ["Average Pick Odds", summary.averagePickOdds],
+    ["", ""],
+
+    ["Favorite / Underdog Split", ""],
+    ["Favorite Record", summary.favoriteWins + "-" + summary.favoriteLosses],
+    ["Favorite Win Rate", summary.favoriteWinRate],
+    ["Favorite Profit", summary.favoriteProfit],
+    ["Underdog Record", summary.underdogWins + "-" + summary.underdogLosses],
+    ["Underdog Win Rate", summary.underdogWinRate],
+    ["Underdog Profit", summary.underdogProfit],
+    ["", ""],
+
+    ["Best Factor Performance", ""],
+    ["Factor", "Games", "Wins", "Losses", "Win Rate", "Profit"]
+  ];
+
+  factorRows.forEach(row => {
+    output.push([
+      row.factor,
+      row.games,
+      row.wins,
+      row.losses,
+      row.winRate,
+      row.profit
+    ]);
+  });
+
+  sheet.getRange(1, 1, output.length, 6).setValues(padRows(output, 6));
+  formatPerformanceDashboard(sheet);
+}
+
+
+function calculatePerformanceDashboardSummary(rows) {
+  let wins = 0;
+  let losses = 0;
+  let profit = 0;
+  let totalOdds = 0;
+  let oddsCount = 0;
+
+  let favoriteWins = 0;
+  let favoriteLosses = 0;
+  let favoriteProfit = 0;
+
+  let underdogWins = 0;
+  let underdogLosses = 0;
+  let underdogProfit = 0;
+
+  rows.forEach(row => {
+    const correct = normalizeBoolean(row["Game Winner Correct?"]);
+    const pickType = row["Model Pick Type"];
+    const flatProfit = Number(row["Flat Bet Profit"]);
+    const pickML = Number(row["Model Pick ML"]);
+
+    if (correct === null) return;
+
+    if (correct) {
+      wins++;
+    } else {
+      losses++;
+    }
+
+    if (!isNaN(flatProfit)) {
+      profit += flatProfit;
+    }
+
+    if (!isNaN(pickML)) {
+      totalOdds += pickML;
+      oddsCount++;
+    }
+
+    if (pickType === "Favorite") {
+      if (correct) favoriteWins++;
+      else favoriteLosses++;
+
+      if (!isNaN(flatProfit)) favoriteProfit += flatProfit;
+    }
+
+    if (pickType === "Underdog") {
+      if (correct) underdogWins++;
+      else underdogLosses++;
+
+      if (!isNaN(flatProfit)) underdogProfit += flatProfit;
+    }
+  });
+
+  const totalGames = wins + losses;
+  const favoriteGames = favoriteWins + favoriteLosses;
+  const underdogGames = underdogWins + underdogLosses;
+
+  return {
+    totalGames,
+    wins,
+    losses,
+    winRate: formatPercent(wins, totalGames),
+    profit: roundMoney(profit),
+    roi: totalGames > 0 ? roundPercent(profit / (totalGames * 100)) : "",
+
+    averagePickOdds: oddsCount > 0 ? Math.round(totalOdds / oddsCount) : "",
+
+    favoriteWins,
+    favoriteLosses,
+    favoriteWinRate: formatPercent(favoriteWins, favoriteGames),
+    favoriteProfit: roundMoney(favoriteProfit),
+
+    underdogWins,
+    underdogLosses,
+    underdogWinRate: formatPercent(underdogWins, underdogGames),
+    underdogProfit: roundMoney(underdogProfit)
+  };
+}
+
+
+function calculateFactorPerformance(rows) {
+  const factorMap = {};
+
+  rows.forEach(row => {
+    const factor = row["Largest Factor"];
+    const correct = normalizeBoolean(row["Game Winner Correct?"]);
+    const flatProfit = Number(row["Flat Bet Profit"]);
+
+    if (!factor || correct === null) return;
+
+    if (!factorMap[factor]) {
+      factorMap[factor] = {
+        factor,
+        games: 0,
+        wins: 0,
+        losses: 0,
+        profit: 0
+      };
+    }
+
+    factorMap[factor].games++;
+
+    if (correct) {
+      factorMap[factor].wins++;
+    } else {
+      factorMap[factor].losses++;
+    }
+
+    if (!isNaN(flatProfit)) {
+      factorMap[factor].profit += flatProfit;
+    }
+  });
+
+  return Object.values(factorMap)
+    .map(item => {
+      item.winRate = formatPercent(item.wins, item.games);
+      item.profit = roundMoney(item.profit);
+      return item;
+    })
+    .sort((a, b) => b.games - a.games);
+}
+
+
+function normalizeBoolean(value) {
+  if (value === true || value === "TRUE" || value === "Yes") return true;
+  if (value === false || value === "FALSE" || value === "No") return false;
+  return null;
+}
+
+
+function formatPercent(numerator, denominator) {
+  if (!denominator || denominator === 0) return "";
+  return Math.round((numerator / denominator) * 1000) / 10 + "%";
+}
+
+
+function roundPercent(value) {
+  return Math.round(value * 1000) / 10 + "%";
+}
+
+
+function roundMoney(value) {
+  return Math.round(value * 100) / 100;
+}
+
+
+function formatPerformanceDashboard(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setFontSize(14)
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(3, 1, 1, lastCol).setFontWeight("bold");
+  sheet.getRange(11, 1, 1, lastCol).setFontWeight("bold");
+  sheet.getRange(20, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setColumnWidth(1, 220);
+  sheet.setColumnWidth(2, 110);
+  sheet.setColumnWidth(3, 90);
+  sheet.setColumnWidth(4, 90);
+  sheet.setColumnWidth(5, 110);
+  sheet.setColumnWidth(6, 110);
+
+  sheet.setFrozenRows(1);
+}
+
+HISTORICALINGESTION.GS
+
+function runHistoricalIngestion2026ToDate() {
+  ingestHistoricalGames("2026-03-26", getTodayText());
+}
+
+function ingestHistoricalGames(startDate, endDate) {
+  const historicalSheet = getOrCreateSheet("RAW_Historical_Games");
+  const logSheet = getOrCreateSheet("Historical_Ingestion_Log");
+
+  ensureHistoricalGamesHeaders(historicalSheet);
+  ensureHistoricalIngestionLogHeaders(logSheet);
+
+  const existingGameIds = getExistingHistoricalGameIds(historicalSheet);
+
+  const url =
+    "https://statsapi.mlb.com/api/v1/schedule" +
+    "?sportId=1" +
+    "&gameTypes=R" +
+    "&startDate=" + startDate +
+    "&endDate=" + endDate +
+    "&hydrate=probablePitcher,venue";
+
+  const data = MLB_API(url);
+  const dates = data.dates || [];
+
+  const rowsToAppend = [];
+  const runTime = Utilities.formatDate(
+    new Date(),
+    "America/New_York",
+    "yyyy-MM-dd HH:mm:ss"
+  );
+
+  dates.forEach(dateBlock => {
+    const gameDate = dateBlock.date;
+    const games = dateBlock.games || [];
+
+    games.forEach(game => {
+      const gameId = game.gamePk;
+      if (!gameId) return;
+      if (existingGameIds.has(String(gameId))) return;
+
+      const status = game.status?.detailedState || "";
+      const isFinal = status === "Final" || status === "Game Over";
+
+      if (!isFinal) return;
+
+      const awayTeam = game.teams.away.team.name;
+      const homeTeam = game.teams.home.team.name;
+
+      const awayScore = game.teams.away.score ?? "";
+      const homeScore = game.teams.home.score ?? "";
+
+      const winner =
+        awayScore > homeScore ? awayTeam :
+        homeScore > awayScore ? homeTeam :
+        "";
+
+      const awayProbable = game.teams.away.probablePitcher || {};
+      const homeProbable = game.teams.home.probablePitcher || {};
+
+      rowsToAppend.push([
+        gameDate,
+        gameId,
+        awayTeam,
+        homeTeam,
+        awayScore,
+        homeScore,
+        winner,
+        status,
+        true,
+
+        awayProbable.fullName || "",
+        homeProbable.fullName || "",
+        awayProbable.id || "",
+        homeProbable.id || "",
+
+        game.venue?.name || "",
+        runTime,
+        "MLB Stats API historical schedule"
+      ]);
+    });
+  });
+
+  if (rowsToAppend.length > 0) {
+    historicalSheet
+      .getRange(
+        historicalSheet.getLastRow() + 1,
+        1,
+        rowsToAppend.length,
+        rowsToAppend[0].length
+      )
+      .setValues(rowsToAppend);
+  }
+
+  logSheet.appendRow([
+    runTime,
+    startDate,
+    endDate,
+    rowsToAppend.length,
+    "Completed"
+  ]);
+
+  buildHistoricalIngestionSummary();
+}
+
+function ensureHistoricalGamesHeaders(sheet) {
+  const headers = [
+    "Game Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Away Score",
+    "Home Score",
+    "Winner",
+    "Status",
+    "Final?",
+
+    "Away SP",
+    "Home SP",
+    "Away SP ID",
+    "Home SP ID",
+
+    "Venue",
+    "Ingested At",
+    "Source"
+  ];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    return;
+  }
+
+  const existingHeaders = sheet
+    .getRange(1, 1, 1, headers.length)
+    .getValues()[0];
+
+  if (existingHeaders.join("|") !== headers.join("|")) {
+    throw new Error(
+      "RAW_Historical_Games headers do not match expected v0.0.7 schema."
+    );
+  }
+}
+
+function ensureHistoricalIngestionLogHeaders(sheet) {
+  const headers = [
+    "Run Time",
+    "Start Date",
+    "End Date",
+    "Games Added",
+    "Status"
+  ];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+}
+
+function getExistingHistoricalGameIds(sheet) {
+  const values = sheet.getDataRange().getValues();
+  const ids = new Set();
+
+  if (values.length < 2) return ids;
+
+  const headers = values[0];
+  const gameIdCol = headers.indexOf("Game ID");
+
+  for (let i = 1; i < values.length; i++) {
+    const gameId = values[i][gameIdCol];
+    if (gameId) ids.add(String(gameId));
+  }
+
+  return ids;
+}
+
+function buildHistoricalIngestionSummary() {
+  const sourceSheet = getOrCreateSheet("RAW_Historical_Games");
+  const summarySheet = getOrCreateSheet("Historical_Ingestion_Summary");
+
+  summarySheet.clearContents();
+
+  const rows = getSheetRows("RAW_Historical_Games");
+
+  const bySeason = {};
+  const byTeam = {};
+
+  rows.forEach(row => {
+    const gameDate = row["Game Date"];
+    if (!gameDate) return;
+
+    const season = gameDate.toString().substring(0, 4);
+
+    if (!bySeason[season]) {
+      bySeason[season] = {
+        games: 0
+      };
+    }
+
+    bySeason[season].games++;
+
+    const awayTeam = row["Away Team"];
+    const homeTeam = row["Home Team"];
+
+    if (awayTeam) {
+      if (!byTeam[awayTeam]) byTeam[awayTeam] = 0;
+      byTeam[awayTeam]++;
+    }
+
+    if (homeTeam) {
+      if (!byTeam[homeTeam]) byTeam[homeTeam] = 0;
+      byTeam[homeTeam]++;
+    }
+  });
+
+  const output = [
+    ["Historical Ingestion Summary", ""],
+    ["", ""],
+    ["Total Historical Games", rows.length],
+    ["", ""],
+    ["Games by Season", ""],
+    ["Season", "Games"]
+  ];
+
+  Object.keys(bySeason)
+    .sort()
+    .forEach(season => {
+      output.push([season, bySeason[season].games]);
+    });
+
+  output.push(["", ""]);
+  output.push(["Games by Team", ""]);
+  output.push(["Team", "Games"]);
+
+  Object.keys(byTeam)
+    .sort()
+    .forEach(team => {
+      output.push([team, byTeam[team]]);
+    });
+
+  summarySheet
+    .getRange(1, 1, output.length, 2)
+    .setValues(output);
+
+  formatHistoricalIngestionSummary(summarySheet);
+}
+
+function formatHistoricalIngestionSummary(sheet) {
+  const lastRow = sheet.getLastRow();
+
+  sheet.getRange(1, 1, 1, 2)
+    .setFontWeight("bold")
+    .setFontSize(14)
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(5, 1, 1, 2).setFontWeight("bold");
+  sheet.getRange(6, 1, 1, 2)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.autoResizeColumns(1, 2);
+  sheet.getRange(1, 1, lastRow, 2).setVerticalAlignment("middle");
+}
+
+function getTodayText() {
+  return Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+}
+
+HISTORICALMODEL.GS
+
+function runHistoricalModelInputTest() {
+  buildHistoricalModelInputForDate("2026-06-10");
+}
+
+function runHistoricalBacktestSmallBatch() {
+  buildHistoricalBacktest("2026-06-01", "2026-06-10");
+  buildHistoricalBacktestSummary();
+}
+
+function buildHistoricalModelInputForDate(targetDate) {
+  const outputSheet = getOrCreateSheet("Historical_Model_Input");
+  outputSheet.clearContents();
+
+  const historicalGames = getSheetRows("RAW_Historical_Games");
+
+  const gamesForDate = historicalGames.filter(row => {
+    return normalizeHistoricalDate(row["Game Date"]) === targetDate;
+  });
+
+  const teamStatsBeforeDate = buildTeamStatsBeforeDate(historicalGames, targetDate);
+  const recentFormBeforeDate = buildRecentFormBeforeDate(historicalGames, targetDate, 7);
+  const homeAwayStatsBeforeDate = buildHomeAwayStatsBeforeDate(historicalGames, targetDate);
+
+  const headers = getHistoricalModelHeaders();
+  const output = [headers];
+
+  gamesForDate.forEach(game => {
+    output.push(buildHistoricalModelRow(
+      game,
+      teamStatsBeforeDate,
+      recentFormBeforeDate,
+      homeAwayStatsBeforeDate
+    ));
+  });
+
+  if (output.length === 1) {
+    output.push(buildNoHistoricalGamesFoundRow(targetDate, headers.length));
+  }
+
+  outputSheet
+    .getRange(1, 1, output.length, headers.length)
+    .setValues(output);
+
+  formatHistoricalModelInput(outputSheet);
+}
+
+function buildHistoricalBacktest(startDate, endDate) {
+  const outputSheet = getOrCreateSheet("Historical_Backtest");
+  outputSheet.clearContents();
+
+  const historicalGames = getSheetRows("RAW_Historical_Games");
+
+  const gamesInRange = historicalGames.filter(row => {
+    const gameDate = normalizeHistoricalDate(row["Game Date"]);
+    return gameDate >= startDate && gameDate <= endDate;
+  });
+
+  const headers = [
+    "Game Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Winner",
+    "Historical Away Score",
+    "Historical Home Score",
+    "Historical Pick",
+    "Historical Confidence",
+    "Historical Correct?"
+  ];
+
+  const output = [headers];
+
+  gamesInRange.forEach(game => {
+    const gameDate = normalizeHistoricalDate(game["Game Date"]);
+
+    const teamStatsBeforeDate = buildTeamStatsBeforeDate(historicalGames, gameDate);
+    const recentFormBeforeDate = buildRecentFormBeforeDate(historicalGames, gameDate, 7);
+    const homeAwayStatsBeforeDate = buildHomeAwayStatsBeforeDate(historicalGames, gameDate);
+
+    const fullRow = buildHistoricalModelRow(
+      game,
+      teamStatsBeforeDate,
+      recentFormBeforeDate,
+      homeAwayStatsBeforeDate
+    );
+
+    const fullHeaders = getHistoricalModelHeaders();
+    const rowObj = rowArrayToObjectHistorical(fullHeaders, fullRow);
+
+    output.push([
+      rowObj["Game Date"],
+      rowObj["Game ID"],
+      rowObj["Away Team"],
+      rowObj["Home Team"],
+      rowObj["Winner"],
+      rowObj["Historical Away Score"],
+      rowObj["Historical Home Score"],
+      rowObj["Historical Pick"],
+      rowObj["Historical Confidence"],
+      rowObj["Historical Correct?"]
+    ]);
+  });
+
+  outputSheet
+    .getRange(1, 1, output.length, headers.length)
+    .setValues(output);
+
+  formatHistoricalBacktest(outputSheet);
+}
+
+function buildHistoricalBacktestSummary() {
+  const sourceRows = getSheetRows("Historical_Backtest");
+  const sheet = getOrCreateSheet("Historical_Backtest_Summary");
+  sheet.clearContents();
+
+  const overall = calculateBacktestSummary(sourceRows);
+
+  const output = [
+    ["Historical Backtest Summary", ""],
+    ["", ""],
+    ["Overall Results", ""],
+    ["Total Games", overall.games],
+    ["Correct Picks", overall.wins],
+    ["Incorrect Picks", overall.losses],
+    ["Win %", overall.winRate],
+    ["", ""],
+    ["Confidence Buckets", ""],
+    ["Bucket", "Games", "Correct", "Incorrect", "Win %"]
+  ];
+
+  const buckets = [
+    { name: "0-20", min: 0, max: 20 },
+    { name: "21-40", min: 21, max: 40 },
+    { name: "41-60", min: 41, max: 60 },
+    { name: "61-80", min: 61, max: 80 },
+    { name: "81-100", min: 81, max: 100 }
+  ];
+
+  buckets.forEach(bucket => {
+    const rows = sourceRows.filter(row => {
+      const confidence = Number(row["Historical Confidence"]);
+      return !isNaN(confidence) &&
+        confidence >= bucket.min &&
+        confidence <= bucket.max;
+    });
+
+    const summary = calculateBacktestSummary(rows);
+
+    output.push([
+      bucket.name,
+      summary.games,
+      summary.wins,
+      summary.losses,
+      summary.winRate
+    ]);
+  });
+
+  sheet
+    .getRange(1, 1, output.length, 5)
+    .setValues(padRows(output, 5));
+
+  formatHistoricalBacktestSummary(sheet);
+}
+
+function getHistoricalModelHeaders() {
+  return [
+    "Game Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Away Score",
+    "Home Score",
+    "Winner",
+
+    "Away SP",
+    "Home SP",
+    "Away SP ID",
+    "Home SP ID",
+    "Venue",
+
+    "Away Games Before Date",
+    "Home Games Before Date",
+    "Away Win % Before Date",
+    "Home Win % Before Date",
+    "Win % Edge Before Date",
+
+    "Away Runs/Game Before Date",
+    "Home Runs/Game Before Date",
+    "Runs/Game Edge Before Date",
+
+    "Away Runs Allowed/Game Before Date",
+    "Home Runs Allowed/Game Before Date",
+    "Runs Allowed/Game Edge Before Date",
+
+    "Away Run Differential Before Date",
+    "Home Run Differential Before Date",
+    "Run Differential Edge Before Date",
+
+    "Away Road Games Before Date",
+    "Home Home Games Before Date",
+    "Away Road Win % Before Date",
+    "Home Home Win % Before Date",
+    "Home/Away Win % Edge Before Date",
+
+    "Away Runs/Game Last 7 Before Date",
+    "Home Runs/Game Last 7 Before Date",
+    "Recent Runs/Game Edge",
+
+    "Away Runs Allowed/Game Last 7 Before Date",
+    "Home Runs Allowed/Game Last 7 Before Date",
+    "Recent Runs Allowed/Game Edge",
+
+    "Historical Away Score",
+    "Historical Home Score",
+    "Historical Pick",
+    "Historical Confidence",
+    "Historical Correct?",
+
+    "Model Reconstruction Status",
+    "Notes"
+  ];
+}
+
+function buildHistoricalModelRow(
+  game,
+  teamStatsBeforeDate,
+  recentFormBeforeDate,
+  homeAwayStatsBeforeDate
+) {
+  const awayTeam = game["Away Team"];
+  const homeTeam = game["Home Team"];
+
+  const awaySeason = teamStatsBeforeDate[awayTeam] || blankTeamStats();
+  const homeSeason = teamStatsBeforeDate[homeTeam] || blankTeamStats();
+
+  const awayRecent = recentFormBeforeDate[awayTeam] || blankTeamStats();
+  const homeRecent = recentFormBeforeDate[homeTeam] || blankTeamStats();
+
+  const awayRoad = homeAwayStatsBeforeDate[awayTeam]?.road || blankTeamStats();
+  const homeHome = homeAwayStatsBeforeDate[homeTeam]?.home || blankTeamStats();
+
+  const awayWinPct = calculateWinPercentageHistorical(awaySeason.wins, awaySeason.games);
+  const homeWinPct = calculateWinPercentageHistorical(homeSeason.wins, homeSeason.games);
+  const winPctEdge = edgeHistorical(awayWinPct, homeWinPct, "higher");
+
+  const awayRunsPerGame = calculateRunsPerGameHistorical(awaySeason.runsScored, awaySeason.games);
+  const homeRunsPerGame = calculateRunsPerGameHistorical(homeSeason.runsScored, homeSeason.games);
+  const runsGameEdge = edgeHistorical(awayRunsPerGame, homeRunsPerGame, "higher");
+
+  const awayRunsAllowedPerGame = calculateRunsPerGameHistorical(awaySeason.runsAllowed, awaySeason.games);
+  const homeRunsAllowedPerGame = calculateRunsPerGameHistorical(homeSeason.runsAllowed, homeSeason.games);
+  const runsAllowedEdge = edgeHistorical(awayRunsAllowedPerGame, homeRunsAllowedPerGame, "lower");
+
+  const awayRunDiff = awaySeason.runsScored - awaySeason.runsAllowed;
+  const homeRunDiff = homeSeason.runsScored - homeSeason.runsAllowed;
+  const runDiffEdge = edgeHistorical(awayRunDiff, homeRunDiff, "higher");
+
+  const awayRoadWinPct = calculateWinPercentageHistorical(awayRoad.wins, awayRoad.games);
+  const homeHomeWinPct = calculateWinPercentageHistorical(homeHome.wins, homeHome.games);
+  const homeAwayWinPctEdge = edgeHistorical(awayRoadWinPct, homeHomeWinPct, "higher");
+
+  const awayRecentRunsPerGame = calculateRunsPerGameHistorical(awayRecent.runsScored, awayRecent.games);
+  const homeRecentRunsPerGame = calculateRunsPerGameHistorical(homeRecent.runsScored, homeRecent.games);
+  const recentRunsGameEdge = edgeHistorical(awayRecentRunsPerGame, homeRecentRunsPerGame, "higher");
+
+  const awayRecentRunsAllowedPerGame = calculateRunsPerGameHistorical(awayRecent.runsAllowed, awayRecent.games);
+  const homeRecentRunsAllowedPerGame = calculateRunsPerGameHistorical(homeRecent.runsAllowed, homeRecent.games);
+  const recentRunsAllowedEdge = edgeHistorical(awayRecentRunsAllowedPerGame, homeRecentRunsAllowedPerGame, "lower");
+
+  const historicalScore = calculateSimpleHistoricalScore({
+    winPctEdge,
+    runsGameEdge,
+    runsAllowedEdge,
+    runDiffEdge,
+    homeAwayWinPctEdge,
+    recentRunsGameEdge,
+    recentRunsAllowedEdge
+  });
+
+  const historicalPick =
+    historicalScore.awayScore > historicalScore.homeScore ? awayTeam :
+    historicalScore.homeScore > historicalScore.awayScore ? homeTeam :
+    "Coin Flip";
+
+  const historicalConfidence = calculateHistoricalConfidence(
+    historicalScore.awayScore,
+    historicalScore.homeScore
+  );
+
+  const winner = game["Winner"];
+  const historicalCorrect =
+    historicalPick === "Coin Flip" || !winner ? "" : historicalPick === winner;
+
+  return [
+    normalizeHistoricalDate(game["Game Date"]),
+    game["Game ID"],
+    awayTeam,
+    homeTeam,
+    game["Away Score"],
+    game["Home Score"],
+    winner,
+
+    game["Away SP"],
+    game["Home SP"],
+    game["Away SP ID"],
+    game["Home SP ID"],
+    game["Venue"],
+
+    awaySeason.games,
+    homeSeason.games,
+    awayWinPct,
+    homeWinPct,
+    winPctEdge,
+
+    awayRunsPerGame,
+    homeRunsPerGame,
+    runsGameEdge,
+
+    awayRunsAllowedPerGame,
+    homeRunsAllowedPerGame,
+    runsAllowedEdge,
+
+    awayRunDiff,
+    homeRunDiff,
+    runDiffEdge,
+
+    awayRoad.games,
+    homeHome.games,
+    awayRoadWinPct,
+    homeHomeWinPct,
+    homeAwayWinPctEdge,
+
+    awayRecentRunsPerGame,
+    homeRecentRunsPerGame,
+    recentRunsGameEdge,
+
+    awayRecentRunsAllowedPerGame,
+    homeRecentRunsAllowedPerGame,
+    recentRunsAllowedEdge,
+
+    historicalScore.awayScore,
+    historicalScore.homeScore,
+    historicalPick,
+    historicalConfidence,
+    historicalCorrect,
+
+    "Stage 5 Complete",
+    "Historical reconstruction, scoring, batch backtest, and summary enabled"
+  ];
+}
+
+function calculateSimpleHistoricalScore(edges) {
+  const weights = {
+    winPctEdge: 3,
+    runsGameEdge: 2,
+    runsAllowedEdge: 2,
+    runDiffEdge: 3,
+    homeAwayWinPctEdge: 2,
+    recentRunsGameEdge: 2,
+    recentRunsAllowedEdge: 2
+  };
+
+  let score = 0;
+  let totalWeight = 0;
+
+  Object.keys(weights).forEach(key => {
+    const value = parseHistoricalNumber(edges[key]);
+    if (value === "") return;
+
+    score += value * weights[key];
+    totalWeight += weights[key];
+  });
+
+  const finalScore = totalWeight > 0 ? score / totalWeight : 0;
+
+  return {
+    awayScore: roundHistoricalNumber(finalScore, 4),
+    homeScore: roundHistoricalNumber(finalScore * -1, 4)
+  };
+}
+
+function calculateHistoricalConfidence(awayScore, homeScore) {
+  const away = parseHistoricalNumber(awayScore);
+  const home = parseHistoricalNumber(homeScore);
+
+  if (away === "" || home === "") return "";
+
+  const scoreGap = Math.abs(away - home);
+
+  return Math.min(100, Math.round(scoreGap * 5));
+}
+
+function calculateBacktestSummary(rows) {
+  let wins = 0;
+  let losses = 0;
+
+  rows.forEach(row => {
+    const correct = normalizeHistoricalBoolean(row["Historical Correct?"]);
+
+    if (correct === true) wins++;
+    if (correct === false) losses++;
+  });
+
+  const games = wins + losses;
+
+  return {
+    games,
+    wins,
+    losses,
+    winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 + "%" : ""
+  };
+}
+
+function buildTeamStatsBeforeDate(historicalGames, targetDate) {
+  const statsByTeam = {};
+
+  historicalGames.forEach(game => {
+    const gameDate = normalizeHistoricalDate(game["Game Date"]);
+
+    if (!gameDate || gameDate >= targetDate) return;
+
+    processHistoricalGameForTeamStats(statsByTeam, game);
+  });
+
+  return statsByTeam;
+}
+
+function buildRecentFormBeforeDate(historicalGames, targetDate, daysBack) {
+  const statsByTeam = {};
+
+  const target = new Date(targetDate + "T00:00:00");
+  const start = new Date(target);
+  start.setDate(target.getDate() - daysBack);
+
+  const startDate = Utilities.formatDate(start, "America/New_York", "yyyy-MM-dd");
+
+  historicalGames.forEach(game => {
+    const gameDate = normalizeHistoricalDate(game["Game Date"]);
+
+    if (!gameDate) return;
+    if (gameDate < startDate) return;
+    if (gameDate >= targetDate) return;
+
+    processHistoricalGameForTeamStats(statsByTeam, game);
+  });
+
+  return statsByTeam;
+}
+
+function buildHomeAwayStatsBeforeDate(historicalGames, targetDate) {
+  const statsByTeam = {};
+
+  historicalGames.forEach(game => {
+    const gameDate = normalizeHistoricalDate(game["Game Date"]);
+
+    if (!gameDate || gameDate >= targetDate) return;
+
+    const awayTeam = game["Away Team"];
+    const homeTeam = game["Home Team"];
+
+    const awayScore = Number(game["Away Score"]);
+    const homeScore = Number(game["Home Score"]);
+
+    if (!awayTeam || !homeTeam) return;
+    if (isNaN(awayScore) || isNaN(homeScore)) return;
+
+    if (!statsByTeam[awayTeam]) statsByTeam[awayTeam] = blankHomeAwayStats();
+    if (!statsByTeam[homeTeam]) statsByTeam[homeTeam] = blankHomeAwayStats();
+
+    statsByTeam[awayTeam].road.games++;
+    statsByTeam[awayTeam].road.runsScored += awayScore;
+    statsByTeam[awayTeam].road.runsAllowed += homeScore;
+
+    statsByTeam[homeTeam].home.games++;
+    statsByTeam[homeTeam].home.runsScored += homeScore;
+    statsByTeam[homeTeam].home.runsAllowed += awayScore;
+
+    if (awayScore > homeScore) {
+      statsByTeam[awayTeam].road.wins++;
+      statsByTeam[homeTeam].home.losses++;
+    } else if (homeScore > awayScore) {
+      statsByTeam[homeTeam].home.wins++;
+      statsByTeam[awayTeam].road.losses++;
+    }
+  });
+
+  return statsByTeam;
+}
+
+function processHistoricalGameForTeamStats(statsByTeam, game) {
+  const awayTeam = game["Away Team"];
+  const homeTeam = game["Home Team"];
+  const awayScore = Number(game["Away Score"]);
+  const homeScore = Number(game["Home Score"]);
+
+  if (!awayTeam || !homeTeam) return;
+  if (isNaN(awayScore) || isNaN(homeScore)) return;
+
+  if (!statsByTeam[awayTeam]) statsByTeam[awayTeam] = blankTeamStats();
+  if (!statsByTeam[homeTeam]) statsByTeam[homeTeam] = blankTeamStats();
+
+  statsByTeam[awayTeam].games++;
+  statsByTeam[awayTeam].runsScored += awayScore;
+  statsByTeam[awayTeam].runsAllowed += homeScore;
+
+  statsByTeam[homeTeam].games++;
+  statsByTeam[homeTeam].runsScored += homeScore;
+  statsByTeam[homeTeam].runsAllowed += awayScore;
+
+  if (awayScore > homeScore) {
+    statsByTeam[awayTeam].wins++;
+    statsByTeam[homeTeam].losses++;
+  } else if (homeScore > awayScore) {
+    statsByTeam[homeTeam].wins++;
+    statsByTeam[awayTeam].losses++;
+  }
+}
+
+function blankTeamStats() {
+  return {
+    games: 0,
+    wins: 0,
+    losses: 0,
+    runsScored: 0,
+    runsAllowed: 0
+  };
+}
+
+function blankHomeAwayStats() {
+  return {
+    home: blankTeamStats(),
+    road: blankTeamStats()
+  };
+}
+
+function calculateRunsPerGameHistorical(runs, games) {
+  if (!games || games === 0) return "";
+  return roundHistoricalNumber(runs / games, 3);
+}
+
+function calculateWinPercentageHistorical(wins, games) {
+  if (!games || games === 0) return "";
+  return roundHistoricalNumber(wins / games, 3);
+}
+
+function edgeHistorical(awayValue, homeValue, direction) {
+  const away = parseHistoricalNumber(awayValue);
+  const home = parseHistoricalNumber(homeValue);
+
+  if (away === "" || home === "") return "";
+
+  if (direction === "lower") {
+    return roundHistoricalNumber(home - away, 4);
+  }
+
+  return roundHistoricalNumber(away - home, 4);
+}
+
+function parseHistoricalNumber(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const num = Number(value);
+  return isNaN(num) ? "" : num;
+}
+
+function roundHistoricalNumber(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+function normalizeHistoricalDate(value) {
+  if (!value) return "";
+
+  if (Object.prototype.toString.call(value) === "[object Date]") {
+    return Utilities.formatDate(value, "America/New_York", "yyyy-MM-dd");
+  }
+
+  return value.toString().substring(0, 10);
+}
+
+function normalizeHistoricalBoolean(value) {
+  if (value === true || value === "TRUE" || value === "Yes") return true;
+  if (value === false || value === "FALSE" || value === "No") return false;
+  return null;
+}
+
+function rowArrayToObjectHistorical(headers, row) {
+  const obj = {};
+
+  headers.forEach((header, index) => {
+    obj[header] = row[index];
+  });
+
+  return obj;
+}
+
+function buildNoHistoricalGamesFoundRow(targetDate, width) {
+  const row = [
+    targetDate,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "No Games Found",
+    "No completed historical games found for this date"
+  ];
+
+  while (row.length < width) {
+    row.splice(row.length - 2, 0, "");
+  }
+
+  return row;
+}
+
+function formatHistoricalModelInput(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+function formatHistoricalBacktest(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+function formatHistoricalBacktestSummary(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setFontSize(14)
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(3, 1, 1, lastCol).setFontWeight("bold");
+  sheet.getRange(9, 1, 1, lastCol).setFontWeight("bold");
+
+  sheet.getRange(10, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+function runHistoricalBacktestJune1To7() {
+  buildHistoricalBacktest("2026-06-01", "2026-06-07");
+  buildHistoricalBacktestSummary();
+}
+
+function runHistoricalBacktestJune8To14() {
+  buildHistoricalBacktest("2026-06-08", "2026-06-14");
+  buildHistoricalBacktestSummary();
+}
+
+function runHistoricalBacktestJune15To22() {
+  buildHistoricalBacktest("2026-06-15", "2026-06-22");
+  buildHistoricalBacktestSummary();
+}
+
+HISTORICALBACKTEST_OPTIMIZED.GS
+
+function runOptimizedHistoricalBacktest2026ToDate() {
+  runOptimizedHistoricalBacktest("2026-03-26", getTodayText());
+}
+
+function runOptimizedHistoricalBacktestJuneToDate() {
+  runOptimizedHistoricalBacktest("2026-06-01", getTodayText());
+}
+
+function runOptimizedHistoricalBacktest(startDate, endDate) {
+  const outputSheet = getOrCreateSheet("Historical_Backtest_Optimized");
+  outputSheet.clearContents();
+
+  const historicalGames = getSheetRows("RAW_Historical_Games")
+    .filter(row => {
+      const gameDate = normalizeOptimizedDate(row["Game Date"]);
+      return gameDate >= startDate && gameDate <= endDate;
+    })
+    .sort((a, b) => {
+      const dateA = normalizeOptimizedDate(a["Game Date"]);
+      const dateB = normalizeOptimizedDate(b["Game Date"]);
+      return dateA.localeCompare(dateB);
+    });
+
+  const gamesByDate = groupHistoricalGamesByDate(historicalGames);
+
+  const cumulativeStats = {};
+  const recentGameLogs = {};
+
+  const headers = [
+    "Game Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Winner",
+
+    "Away Games Before Date",
+    "Home Games Before Date",
+    "Away Win % Before Date",
+    "Home Win % Before Date",
+    "Win % Edge Before Date",
+
+    "Away Runs/Game Before Date",
+    "Home Runs/Game Before Date",
+    "Runs/Game Edge Before Date",
+
+    "Away Runs Allowed/Game Before Date",
+    "Home Runs Allowed/Game Before Date",
+    "Runs Allowed/Game Edge Before Date",
+
+    "Away Run Differential Before Date",
+    "Home Run Differential Before Date",
+    "Run Differential Edge Before Date",
+
+    "Away Road Games Before Date",
+    "Home Home Games Before Date",
+    "Away Road Win % Before Date",
+    "Home Home Win % Before Date",
+    "Home/Away Win % Edge Before Date",
+
+    "Away Runs/Game Last 7 Before Date",
+    "Home Runs/Game Last 7 Before Date",
+    "Recent Runs/Game Edge",
+
+    "Away Runs Allowed/Game Last 7 Before Date",
+    "Home Runs Allowed/Game Last 7 Before Date",
+    "Recent Runs Allowed/Game Edge",
+
+    "Historical Away Score",
+    "Historical Home Score",
+    "Historical Pick",
+    "Historical Confidence",
+    "Historical Correct?"
+  ];
+
+  const output = [headers];
+
+  Object.keys(gamesByDate).sort().forEach(gameDate => {
+    const gamesForDate = gamesByDate[gameDate];
+
+    gamesForDate.forEach(game => {
+      const row = buildOptimizedBacktestRow(
+        game,
+        gameDate,
+        cumulativeStats,
+        recentGameLogs
+      );
+
+      output.push(row);
+    });
+
+    gamesForDate.forEach(game => {
+      updateOptimizedStatsAfterGame(cumulativeStats, recentGameLogs, game, gameDate);
+    });
+  });
+
+  outputSheet
+    .getRange(1, 1, output.length, headers.length)
+    .setValues(output);
+
+  formatOptimizedHistoricalBacktest(outputSheet);
+  buildOptimizedHistoricalBacktestSummary();
+}
+
+function buildOptimizedBacktestRow(game, gameDate, cumulativeStats, recentGameLogs) {
+  const awayTeam = game["Away Team"];
+  const homeTeam = game["Home Team"];
+
+  const awaySeason = cumulativeStats[awayTeam]?.overall || blankOptimizedStats();
+  const homeSeason = cumulativeStats[homeTeam]?.overall || blankOptimizedStats();
+
+  const awayRoad = cumulativeStats[awayTeam]?.road || blankOptimizedStats();
+  const homeHome = cumulativeStats[homeTeam]?.home || blankOptimizedStats();
+
+  const awayRecent = calculateOptimizedRecentStats(recentGameLogs[awayTeam] || [], gameDate, 7);
+  const homeRecent = calculateOptimizedRecentStats(recentGameLogs[homeTeam] || [], gameDate, 7);
+
+  const awayWinPct = calculateOptimizedWinPct(awaySeason.wins, awaySeason.games);
+  const homeWinPct = calculateOptimizedWinPct(homeSeason.wins, homeSeason.games);
+  const winPctEdge = optimizedEdge(awayWinPct, homeWinPct, "higher");
+
+  const awayRunsPerGame = calculateOptimizedPerGame(awaySeason.runsScored, awaySeason.games);
+  const homeRunsPerGame = calculateOptimizedPerGame(homeSeason.runsScored, homeSeason.games);
+  const runsGameEdge = optimizedEdge(awayRunsPerGame, homeRunsPerGame, "higher");
+
+  const awayRunsAllowedPerGame = calculateOptimizedPerGame(awaySeason.runsAllowed, awaySeason.games);
+  const homeRunsAllowedPerGame = calculateOptimizedPerGame(homeSeason.runsAllowed, homeSeason.games);
+  const runsAllowedEdge = optimizedEdge(awayRunsAllowedPerGame, homeRunsAllowedPerGame, "lower");
+
+  const awayRunDiff = awaySeason.runsScored - awaySeason.runsAllowed;
+  const homeRunDiff = homeSeason.runsScored - homeSeason.runsAllowed;
+  const runDiffEdge = optimizedEdge(awayRunDiff, homeRunDiff, "higher");
+
+  const awayRoadWinPct = calculateOptimizedWinPct(awayRoad.wins, awayRoad.games);
+  const homeHomeWinPct = calculateOptimizedWinPct(homeHome.wins, homeHome.games);
+  const homeAwayWinPctEdge = optimizedEdge(awayRoadWinPct, homeHomeWinPct, "higher");
+
+  const awayRecentRunsPerGame = calculateOptimizedPerGame(awayRecent.runsScored, awayRecent.games);
+  const homeRecentRunsPerGame = calculateOptimizedPerGame(homeRecent.runsScored, homeRecent.games);
+  const recentRunsGameEdge = optimizedEdge(awayRecentRunsPerGame, homeRecentRunsPerGame, "higher");
+
+  const awayRecentRunsAllowedPerGame = calculateOptimizedPerGame(awayRecent.runsAllowed, awayRecent.games);
+  const homeRecentRunsAllowedPerGame = calculateOptimizedPerGame(homeRecent.runsAllowed, homeRecent.games);
+  const recentRunsAllowedEdge = optimizedEdge(awayRecentRunsAllowedPerGame, homeRecentRunsAllowedPerGame, "lower");
+
+  const score = calculateOptimizedHistoricalScore({
+    winPctEdge,
+    runsGameEdge,
+    runsAllowedEdge,
+    runDiffEdge,
+    homeAwayWinPctEdge,
+    recentRunsGameEdge,
+    recentRunsAllowedEdge
+  });
+
+  const pick =
+    score.awayScore > score.homeScore ? awayTeam :
+    score.homeScore > score.awayScore ? homeTeam :
+    "Coin Flip";
+
+  const confidence = calculateOptimizedConfidence(score.awayScore, score.homeScore);
+
+  const winner = game["Winner"];
+  const correct =
+    pick === "Coin Flip" || !winner ? "" : pick === winner;
+
+  return [
+    gameDate,
+    game["Game ID"],
+    awayTeam,
+    homeTeam,
+    winner,
+
+    awaySeason.games,
+    homeSeason.games,
+    awayWinPct,
+    homeWinPct,
+    winPctEdge,
+
+    awayRunsPerGame,
+    homeRunsPerGame,
+    runsGameEdge,
+
+    awayRunsAllowedPerGame,
+    homeRunsAllowedPerGame,
+    runsAllowedEdge,
+
+    awayRunDiff,
+    homeRunDiff,
+    runDiffEdge,
+
+    awayRoad.games,
+    homeHome.games,
+    awayRoadWinPct,
+    homeHomeWinPct,
+    homeAwayWinPctEdge,
+
+    awayRecentRunsPerGame,
+    homeRecentRunsPerGame,
+    recentRunsGameEdge,
+
+    awayRecentRunsAllowedPerGame,
+    homeRecentRunsAllowedPerGame,
+    recentRunsAllowedEdge,
+
+    score.awayScore,
+    score.homeScore,
+    pick,
+    confidence,
+    correct
+  ];
+}
+
+function updateOptimizedStatsAfterGame(cumulativeStats, recentGameLogs, game, gameDate) {
+  const awayTeam = game["Away Team"];
+  const homeTeam = game["Home Team"];
+  const awayScore = Number(game["Away Score"]);
+  const homeScore = Number(game["Home Score"]);
+
+  if (!awayTeam || !homeTeam) return;
+  if (isNaN(awayScore) || isNaN(homeScore)) return;
+
+  ensureOptimizedTeam(cumulativeStats, awayTeam);
+  ensureOptimizedTeam(cumulativeStats, homeTeam);
+
+  updateOptimizedBucket(cumulativeStats[awayTeam].overall, awayScore, homeScore);
+  updateOptimizedBucket(cumulativeStats[homeTeam].overall, homeScore, awayScore);
+
+  updateOptimizedBucket(cumulativeStats[awayTeam].road, awayScore, homeScore);
+  updateOptimizedBucket(cumulativeStats[homeTeam].home, homeScore, awayScore);
+
+  if (awayScore > homeScore) {
+    cumulativeStats[awayTeam].overall.wins++;
+    cumulativeStats[awayTeam].road.wins++;
+
+    cumulativeStats[homeTeam].overall.losses++;
+    cumulativeStats[homeTeam].home.losses++;
+  } else if (homeScore > awayScore) {
+    cumulativeStats[homeTeam].overall.wins++;
+    cumulativeStats[homeTeam].home.wins++;
+
+    cumulativeStats[awayTeam].overall.losses++;
+    cumulativeStats[awayTeam].road.losses++;
+  }
+
+  if (!recentGameLogs[awayTeam]) recentGameLogs[awayTeam] = [];
+  if (!recentGameLogs[homeTeam]) recentGameLogs[homeTeam] = [];
+
+  recentGameLogs[awayTeam].push({
+    gameDate,
+    runsScored: awayScore,
+    runsAllowed: homeScore
+  });
+
+  recentGameLogs[homeTeam].push({
+    gameDate,
+    runsScored: homeScore,
+    runsAllowed: awayScore
+  });
+}
+
+function updateOptimizedBucket(bucket, runsScored, runsAllowed) {
+  bucket.games++;
+  bucket.runsScored += runsScored;
+  bucket.runsAllowed += runsAllowed;
+}
+
+function ensureOptimizedTeam(cumulativeStats, team) {
+  if (!cumulativeStats[team]) {
+    cumulativeStats[team] = {
+      overall: blankOptimizedStats(),
+      home: blankOptimizedStats(),
+      road: blankOptimizedStats()
+    };
+  }
+}
+
+function calculateOptimizedRecentStats(gameLogs, targetDate, daysBack) {
+  const target = new Date(targetDate + "T00:00:00");
+  const start = new Date(target);
+  start.setDate(target.getDate() - daysBack);
+
+  const startDate = Utilities.formatDate(start, "America/New_York", "yyyy-MM-dd");
+
+  const stats = blankOptimizedStats();
+
+  gameLogs.forEach(log => {
+    if (log.gameDate < startDate) return;
+    if (log.gameDate >= targetDate) return;
+
+    stats.games++;
+    stats.runsScored += log.runsScored;
+    stats.runsAllowed += log.runsAllowed;
+  });
+
+  return stats;
+}
+
+function groupHistoricalGamesByDate(games) {
+  const grouped = {};
+
+  games.forEach(game => {
+    const gameDate = normalizeOptimizedDate(game["Game Date"]);
+
+    if (!grouped[gameDate]) grouped[gameDate] = [];
+    grouped[gameDate].push(game);
+  });
+
+  return grouped;
+}
+
+function calculateOptimizedHistoricalScore(edges) {
+  const weights = {
+    winPctEdge: 3,
+    runsGameEdge: 2,
+    runsAllowedEdge: 2,
+    runDiffEdge: 3,
+    homeAwayWinPctEdge: 2,
+    recentRunsGameEdge: 2,
+    recentRunsAllowedEdge: 2
+  };
+
+  let score = 0;
+  let totalWeight = 0;
+
+  Object.keys(weights).forEach(key => {
+    const value = parseOptimizedNumber(edges[key]);
+    if (value === "") return;
+
+    score += value * weights[key];
+    totalWeight += weights[key];
+  });
+
+  const finalScore = totalWeight > 0 ? score / totalWeight : 0;
+
+  return {
+    awayScore: roundOptimizedNumber(finalScore, 4),
+    homeScore: roundOptimizedNumber(finalScore * -1, 4)
+  };
+}
+
+function calculateOptimizedConfidence(awayScore, homeScore) {
+  const away = parseOptimizedNumber(awayScore);
+  const home = parseOptimizedNumber(homeScore);
+
+  if (away === "" || home === "") return "";
+
+  const scoreGap = Math.abs(away - home);
+  return Math.min(100, Math.round(scoreGap * 5));
+}
+
+function buildOptimizedHistoricalBacktestSummary() {
+  const sourceRows = getSheetRows("Historical_Backtest_Optimized");
+  const sheet = getOrCreateSheet("Historical_Backtest_Optimized_Summary");
+  sheet.clearContents();
+
+  const overall = calculateOptimizedSummary(sourceRows);
+
+  const output = [
+    ["Optimized Historical Backtest Summary", ""],
+    ["", ""],
+    ["Overall Results", ""],
+    ["Total Games", overall.games],
+    ["Correct Picks", overall.wins],
+    ["Incorrect Picks", overall.losses],
+    ["Win %", overall.winRate],
+    ["", ""],
+    ["Confidence Buckets", ""],
+    ["Bucket", "Games", "Correct", "Incorrect", "Win %"]
+  ];
+
+  const buckets = [
+    { name: "0-20", min: 0, max: 20 },
+    { name: "21-40", min: 21, max: 40 },
+    { name: "41-60", min: 41, max: 60 },
+    { name: "61-80", min: 61, max: 80 },
+    { name: "81-100", min: 81, max: 100 }
+  ];
+
+  buckets.forEach(bucket => {
+    const rows = sourceRows.filter(row => {
+      const confidence = Number(row["Historical Confidence"]);
+      return !isNaN(confidence) &&
+        confidence >= bucket.min &&
+        confidence <= bucket.max;
+    });
+
+    const summary = calculateOptimizedSummary(rows);
+
+    output.push([
+      bucket.name,
+      summary.games,
+      summary.wins,
+      summary.losses,
+      summary.winRate
+    ]);
+  });
+
+  sheet
+    .getRange(1, 1, output.length, 5)
+    .setValues(padRows(output, 5));
+
+  formatOptimizedHistoricalBacktestSummary(sheet);
+}
+
+function calculateOptimizedSummary(rows) {
+  let wins = 0;
+  let losses = 0;
+
+  rows.forEach(row => {
+    const correct = normalizeOptimizedBoolean(row["Historical Correct?"]);
+
+    if (correct === true) wins++;
+    if (correct === false) losses++;
+  });
+
+  const games = wins + losses;
+
+  return {
+    games,
+    wins,
+    losses,
+    winRate: games > 0 ? Math.round((wins / games) * 1000) / 10 + "%" : ""
+  };
+}
+
+function blankOptimizedStats() {
+  return {
+    games: 0,
+    wins: 0,
+    losses: 0,
+    runsScored: 0,
+    runsAllowed: 0
+  };
+}
+
+function calculateOptimizedPerGame(value, games) {
+  if (!games || games === 0) return "";
+  return roundOptimizedNumber(value / games, 3);
+}
+
+function calculateOptimizedWinPct(wins, games) {
+  if (!games || games === 0) return "";
+  return roundOptimizedNumber(wins / games, 3);
+}
+
+function optimizedEdge(awayValue, homeValue, direction) {
+  const away = parseOptimizedNumber(awayValue);
+  const home = parseOptimizedNumber(homeValue);
+
+  if (away === "" || home === "") return "";
+
+  if (direction === "lower") {
+    return roundOptimizedNumber(home - away, 4);
+  }
+
+  return roundOptimizedNumber(away - home, 4);
+}
+
+function parseOptimizedNumber(value) {
+  if (value === "" || value === undefined || value === null) return "";
+
+  const num = Number(value);
+  return isNaN(num) ? "" : num;
+}
+
+function roundOptimizedNumber(value, decimals) {
+  if (value === "" || isNaN(value)) return "";
+  return Number(value.toFixed(decimals));
+}
+
+function normalizeOptimizedDate(value) {
+  if (!value) return "";
+
+  if (Object.prototype.toString.call(value) === "[object Date]") {
+    return Utilities.formatDate(value, "America/New_York", "yyyy-MM-dd");
+  }
+
+  return value.toString().substring(0, 10);
+}
+
+function normalizeOptimizedBoolean(value) {
+  if (value === true || value === "TRUE" || value === "Yes") return true;
+  if (value === false || value === "FALSE" || value === "No") return false;
+  return null;
+}
+
+function formatOptimizedHistoricalBacktest(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+function formatOptimizedHistoricalBacktestSummary(sheet) {
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+
+  if (lastRow < 1) return;
+
+  sheet.getRange(1, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setFontSize(14)
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(3, 1, 1, lastCol).setFontWeight("bold");
+  sheet.getRange(9, 1, 1, lastCol).setFontWeight("bold");
+
+  sheet.getRange(10, 1, 1, lastCol)
+    .setFontWeight("bold")
+    .setBackground("#1f1f1f")
+    .setFontColor("#ffffff");
+
+  sheet.getRange(1, 1, lastRow, lastCol)
+    .setWrap(true)
+    .setVerticalAlignment("middle");
+
+  sheet.autoResizeColumns(1, lastCol);
+}
+
+===== END APPS SCRIPT =====

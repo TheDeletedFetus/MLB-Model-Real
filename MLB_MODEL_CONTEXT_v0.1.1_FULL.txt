@@ -1,0 +1,422 @@
+
+MLB PREDICTIVE MODEL - MASTER CONTEXT FILE
+
+VERSION: v0.1.1-alpha
+
+====================================================
+IMPORTANT
+====================================================
+
+This file is the authoritative project document.
+
+Core Rules:
+
+1. HISTORY is append-only.
+2. Never delete tracked statistics from historical records.
+3. Preserve raw data whenever possible.
+4. Backtesting capability is mandatory.
+5. Dashboard reporting is a core feature.
+6. Explain code changes when possible.
+7. Simplicity is preferred over complexity.
+8. Machine learning is NOT required for v1.0.
+9. Confidence is not valid until calibrated.
+10. Weight optimization must be evidence-based.
+11. Do not tune weights based on intuition.
+12. Preserve feature-testing capability at all times.
+
+====================================================
+PROJECT GOAL
+====================================================
+
+Build a fully automated MLB betting model that identifies
+positive expected value opportunities by comparing model
+probabilities against market-implied probabilities.
+
+====================================================
+TECHNOLOGY STACK
+====================================================
+
+Current:
+- Google Sheets
+- Google Apps Script
+
+Future:
+- Python
+- SQLite
+- Private GitHub Repository
+
+====================================================
+CURRENT STATUS
+====================================================
+
+Version:
+v0.1.1-alpha
+
+Phase:
+Phase 4 - Feature Validation & Signal Discovery
+
+Completed:
+- Historical ingestion
+- Historical reconstruction
+- Historical backtesting
+- Confidence bucket reporting
+- Pregame snapshot architecture
+- Feature warehouse architecture
+- Rolling feature testing framework
+
+Current Objective:
+Determine which features possess measurable predictive value.
+
+====================================================
+DEFINITION OF v1.0
+====================================================
+
+A fully automated MLB prediction system that:
+
+- Pulls MLB data automatically
+- Pulls betting odds automatically
+- Generates daily win probabilities
+- Calculates market edge
+- Stores pregame predictions
+- Stores historical game results
+- Tracks ROI
+- Tracks model performance
+- Requires minimal manual intervention
+
+Machine learning is NOT required for v1.0.
+
+====================================================
+CURRENT ARCHITECTURE
+====================================================
+
+RAW DATA
+    ↓
+MODEL_MATRIX
+    ↓
+Pregame Snapshot
+    ↓
+HISTORY
+    ↓
+Results Update
+    ↓
+Feature Testing
+    ↓
+Weight Optimization
+
+====================================================
+HISTORY DESIGN
+====================================================
+
+OLD:
+
+Results Log
+
+NEW:
+
+Pregame Feature Warehouse
+
+Workflow:
+
+MODEL_MATRIX
+    ↓
+Snapshot Stored
+    ↓
+Game Played
+    ↓
+Results Attached
+
+Benefits:
+
+- Preserves true pregame inputs
+- Eliminates look-ahead bias
+- Enables feature testing
+- Enables future ML development
+
+====================================================
+FEATURE TESTING SYSTEM
+====================================================
+
+Tabs:
+
+Feature_Testing
+Feature_Buckets
+
+Current Feature Count:
+
+51 Automatically Discovered Features
+
+Discovery Logic:
+
+MM_*Edge*
+
+Examples:
+
+- Runs/Game Edge
+- Run Differential Edge
+- OPS Edge
+- OPS vs Hand Edge
+- Team ERA Edge
+- Team WHIP Edge
+- Starter ERA Edge
+- Starter WHIP Edge
+- Bullpen ERA Edge
+- Bullpen WHIP Edge
+- Team OPS Last 7 Edge
+- Team OPS Last 14 Edge
+- Team OPS Last 30 Edge
+
+====================================================
+FEATURE TESTING METHODOLOGY
+====================================================
+
+For each feature:
+
+1. Determine which team held the advantage.
+2. Generate a feature-only pick.
+3. Compare against actual winner.
+4. Record:
+   - Games
+   - Correct
+   - Incorrect
+   - Win %
+   - Market Expected Win %
+   - Delta vs Market
+   - ROI
+
+Signal Classification:
+
+55%+
+Potential Strong Signal
+
+53%-55%
+Potential Positive Signal
+
+50%-53%
+Possible Weak Signal
+
+48%-50%
+Likely Noise
+
+Below 48%
+Potential Negative Signal
+
+====================================================
+FEATURE BUCKET TESTING
+====================================================
+
+Purpose:
+
+Determine whether larger edges produce stronger signals.
+
+Example:
+
+Starter ERA Edge
+
+0.0 - 0.5
+0.5 - 1.0
+1.0 - 1.5
+1.5 - 2.0
+2.0+
+
+Measure:
+
+- Games
+- Win %
+- Market Delta
+- ROI
+
+====================================================
+PRELIMINARY FEATURE RESULTS
+====================================================
+
+Starter ERA Edge
+
+Games: 941
+Win Rate: 53.10%
+Classification:
+Potential Positive Signal
+
+------------------------------------------
+
+Starter WHIP Edge
+
+Games: 935
+Win Rate: 54.70%
+Classification:
+Potential Positive Signal
+
+------------------------------------------
+
+Bullpen ERA Edge
+
+Games: 1133
+Win Rate: 50.80%
+Classification:
+Likely Noise
+
+These results remain preliminary until the rolling
+feature warehouse accumulates sufficient live data.
+
+====================================================
+MODEL_MATRIX INVENTORY
+====================================================
+
+Major Categories:
+
+Offense
+- Runs/Game
+- Run Differential
+- OPS
+- OBP
+- SLG
+- BABIP
+- OPS vs Hand
+
+Pitching
+- Team ERA
+- Team WHIP
+- Team K/9
+- Team BB/9
+- Team HR/9
+
+Starting Pitchers
+- ERA
+- WHIP
+- K/BB
+- K/9
+- BB/9
+- HR/9
+- Last 3 Form
+- Last 5 Form
+- Home/Away Splits
+
+Bullpen
+- ERA
+- WHIP
+- K/9
+- BB/9
+- HR/9
+- Save %
+- Blown Saves
+- Inherited Runner %
+- Leverage Index
+- Usage
+- Fatigue
+
+Recent Form
+- OPS Last 7
+- OPS Last 14
+- OPS Last 30
+- ERA Last 7
+- ERA Last 14
+- ERA Last 30
+
+Context
+- Park Factors
+- Weather
+- Odds
+- Implied Probability
+
+====================================================
+FUTURE FEATURES
+====================================================
+
+Weather:
+
+- Wind Speed
+- Wind Direction
+- Humidity
+- Air Density
+- Weather Flags
+
+Market:
+
+- Opening Line
+- Closing Line
+- Line Movement
+- Reverse Line Movement
+- CLV Tracking
+
+Advanced Baseball:
+
+- xFIP
+- SIERA
+- xERA
+- Barrel %
+- Hard Hit %
+- wRC+
+- wOBA
+
+====================================================
+ROADMAP
+====================================================
+
+v0.0.7
+✓ Historical ingestion foundation
+✓ Historical game database
+
+v0.0.8
+✓ Historical reconstruction
+✓ Historical backtesting
+
+v0.0.9
+✓ Optimized historical backtesting
+✓ Confidence bucket reporting
+
+v0.1.0
+✓ Feature testing framework
+✓ Single-feature testing
+
+v0.1.1
+✓ Pregame Snapshot Architecture
+✓ HISTORY Feature Warehouse
+✓ Rolling Feature Testing
+✓ Feature Bucket Testing
+
+Next:
+
+□ Full feature validation
+□ Feature ranking report
+□ Ablation testing
+□ Weight optimization
+□ Confidence calibration
+□ Model validation report
+
+v0.2.0
+
+□ Market comparison expansion
+□ Closing line value tracking
+□ EV framework
+□ Automated weight suggestions
+
+v1.0.0
+
+□ Fully automated production model
+
+====================================================
+LESSONS LEARNED
+====================================================
+
+1. Backtesting before feature testing can hide weak signals.
+2. Confidence scores are meaningless until calibrated.
+3. More complexity does not guarantee more accuracy.
+4. Preserve all historical features.
+5. Signal discovery precedes weight optimization.
+6. Win percentage alone does not equal betting edge.
+7. Market comparison is ultimately required.
+8. Every new feature should automatically enter the testing pipeline.
+
+====================================================
+CURRENT DEVELOPMENT RULE
+====================================================
+
+DO NOT ADD OR REMOVE WEIGHTS BASED ON OPINION.
+
+All future model changes should be supported by:
+
+- Feature testing
+- Market comparison
+- Out-of-sample validation
+- Historical evidence
+
+End of Document.

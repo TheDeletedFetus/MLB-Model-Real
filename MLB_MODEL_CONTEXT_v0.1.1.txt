@@ -1,0 +1,149 @@
+
+MLB PREDICTIVE MODEL - MASTER CONTEXT FILE
+
+VERSION: v0.1.1-alpha
+
+IMPORTANT:
+This file contains the complete current state of the MLB Predictive Model project.
+Treat this file as the authoritative source of truth.
+
+CURRENT PROJECT STATUS
+
+Version:
+v0.1.1-alpha
+
+Current Phase:
+Phase 4 - Feature Validation & Signal Discovery
+
+Current Milestone:
+Historical feature validation and signal discovery
+
+Primary Objective:
+Determine which tracked statistics possess predictive value by testing every feature against historical game outcomes stored in HISTORY.
+
+Current Development Focus:
+- Pregame feature warehouse
+- Rolling feature testing
+- Feature bucket testing
+- Signal strength measurement
+- Weight optimization preparation
+- Confidence calibration preparation
+
+ARCHITECTURE UPDATE (COMPLETED)
+
+v0.1.1 Pregame Snapshot Architecture
+✓ HISTORY converted from a results log into a pregame feature warehouse
+✓ MODEL_MATRIX snapshots stored before first pitch
+✓ Results attached later by update process
+✓ Append-only HISTORY preserved
+✓ Feature testing infrastructure deployed
+
+NEW TABS
+
+Feature_Testing
+- Automatically discovers all MM_* Edge features
+- Currently discovering 51 feature variables
+- Calculates win rate by feature
+- Calculates market comparison metrics
+- Calculates ROI metrics
+- Classifies signal strength
+
+Feature_Buckets
+- Tests feature magnitude
+- Splits each feature into quartile buckets
+- Measures whether larger edges are more predictive than smaller edges
+
+FEATURE TESTING METHODOLOGY
+
+Purpose:
+Identify which inputs provide measurable predictive value.
+
+Method:
+1. Compare each feature value between teams.
+2. Determine which team held the feature advantage.
+3. Compare feature advantage to actual game winner.
+4. Record:
+   - Games Tested
+   - Correct Picks
+   - Incorrect Picks
+   - Win %
+   - Edge Magnitude
+   - Market Comparison
+   - ROI
+
+Classification Guidelines:
+
+55%+
+Potential Strong Signal
+
+53%-55%
+Potential Positive Signal
+
+50%-53%
+Possible Weak Signal
+
+48%-50%
+Likely Noise
+
+Below 48%
+Potential Negative Signal
+
+PRELIMINARY FEATURE RESULTS
+
+Starter ERA Edge
+Games: 941
+Win Rate: 53.10%
+Classification: Potential Positive Signal
+
+Starter WHIP Edge
+Games: 935
+Win Rate: 54.70%
+Classification: Potential Positive Signal
+
+Bullpen ERA Edge
+Games: 1133
+Win Rate: 50.80%
+Classification: Likely Noise
+
+CURRENT FEATURE INVENTORY
+
+Current Automatically-Tested Features:
+51
+
+ROADMAP
+
+v0.1.0
+✓ Feature testing framework
+✓ Single-feature performance testing
+
+v0.1.1
+✓ Pregame Snapshot Architecture
+✓ HISTORY Feature Warehouse
+✓ Rolling Feature Testing
+✓ Feature Bucket Testing
+
+Next:
+□ Full feature catalog validation
+□ Feature ranking report
+□ Ablation testing
+□ Weight optimization framework
+□ Confidence calibration table
+□ First true model validation report
+
+v0.2.0
+
+□ Market comparison engine expansion
+□ Closing line value tracking
+□ Historical market validation
+□ Positive EV identification framework
+□ Automated weight recommendations
+
+LESSONS LEARNED
+
+1. Backtesting before feature testing can hide weak signals.
+2. Confidence scores are meaningless until calibrated.
+3. Higher complexity does not automatically improve predictive accuracy.
+4. Historical data preservation is critical.
+5. Signal discovery must precede weight optimization.
+6. Win percentage alone is insufficient for betting profitability.
+7. Every tracked statistic should remain available for future testing.
