@@ -5,7 +5,7 @@
 
 const MODEL_NAME = "MLB Model";
 const MODEL_STAGE = "Development";
-const PROJECT_VERSION = "v0.1.2";
+const PROJECT_VERSION = "v0.1.3";
 const MODEL_VERSION = "v0.0.1";
 
 function getModelName() {

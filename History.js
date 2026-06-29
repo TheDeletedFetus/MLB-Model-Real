@@ -14,18 +14,28 @@ function appendPregameHistorySnapshot() {
     matrixHeaders.map(header => "MM_" + header)
   );
 
-  ensureExactHistoryHeaders(historySheet, historyHeaders);
-  ensureExactHistoryHeaders(archiveSheet, historyHeaders);
+  ensureHistoryHeaders(historySheet, historyHeaders);
+  ensureHistoryHeaders(archiveSheet, historyHeaders);
+
+  const finalHistoryHeaders = historySheet
+    .getRange(1, 1, 1, historySheet.getLastColumn())
+    .getValues()[0];
+
+  const finalArchiveHeaders = archiveSheet
+    .getRange(1, 1, 1, archiveSheet.getLastColumn())
+    .getValues()[0];
 
   const existingGameIds = getExistingHistoryGameIds(historySheet);
 
+  const now = new Date();
   const snapshotTime = Utilities.formatDate(
-    new Date(),
+    now,
     "America/New_York",
     "yyyy-MM-dd HH:mm:ss"
   );
 
-  const rowsToAppend = [];
+  const rowsToAppendHistory = [];
+  const rowsToAppendArchive = [];
 
   matrixRows.forEach(matrixRow => {
     const row = rowArrayToObject(matrixHeaders, matrixRow);
@@ -35,98 +45,30 @@ function appendPregameHistorySnapshot() {
 
     if (existingGameIds.has(String(gameId))) return;
 
-    const awayTeam = row["Away Team"];
-    const homeTeam = row["Home Team"];
-    const modelPick = row["Model Pick"];
+    const gameTime = getPregameSnapshotGameTime_(row);
 
-    const modelPickSide =
-      modelPick === awayTeam ? "Away" :
-      modelPick === homeTeam ? "Home" :
-      "Coin Flip";
+    if (!gameTime) {
+      Logger.log("Skipping game with missing/invalid game time: " + gameId);
+      return;
+    }
 
-    const awayML = parseHistoryNumber(row["Away ML"]);
-    const homeML = parseHistoryNumber(row["Home ML"]);
+    if (now >= gameTime) {
+      Logger.log("Skipping already-started game: " + gameId + " | " + gameTime);
+      return;
+    }
 
-    const awayMarketProbability = americanOddsToHistoryProbability(awayML);
-    const homeMarketProbability = americanOddsToHistoryProbability(homeML);
+    const historyObject = buildPregameHistoryObject_(row, matrixHeaders, matrixRow, snapshotTime);
 
-    const marketFavorite = getMarketFavorite(awayTeam, homeTeam, awayML, homeML);
-    const marketUnderdog = getMarketUnderdog(awayTeam, homeTeam, awayML, homeML);
-
-    const modelPickML =
-      modelPick === awayTeam ? awayML :
-      modelPick === homeTeam ? homeML :
-      "";
-
-    const modelPickMarketProbability =
-      modelPick === awayTeam ? awayMarketProbability :
-      modelPick === homeTeam ? homeMarketProbability :
-      "";
-
-    const modelPickType =
-      modelPick === marketFavorite ? "Favorite" :
-      modelPick === marketUnderdog ? "Underdog" :
-      "None";
-
-    const bestEdge = findBestEdge(row);
-
-    const baseRow = [
-      snapshotTime,
-      gameId,
-      row["Date"],
-
-      awayTeam,
-      homeTeam,
-      "",
-      "",
-      "",
-
-      modelPick,
-      modelPickSide,
-      "",
-
-      row["Away Model Score"],
-      row["Home Model Score"],
-      row["Confidence"],
-
-      "",
-      "",
-      "",
-
-      row["Away ML"],
-      row["Home ML"],
-      awayMarketProbability,
-      homeMarketProbability,
-      modelPickMarketProbability,
-
-      marketFavorite,
-      marketUnderdog,
-      modelPickML,
-      modelPickType,
-
-      modelPickType === "Underdog",
-      "",
-      modelPickType === "Favorite",
-      "",
-
-      "",
-      "",
-
-      bestEdge.name,
-      bestEdge.value,
-      "",
-
-      false,
-      "PREGAME_MODEL_MATRIX_SNAPSHOT",
-      getModelVersion()
-    ];
-
-    rowsToAppend.push(baseRow.concat(matrixRow));
+    rowsToAppendHistory.push(objectToRow_(historyObject, finalHistoryHeaders));
+    rowsToAppendArchive.push(objectToRow_(historyObject, finalArchiveHeaders));
   });
 
-  if (rowsToAppend.length > 0) {
-    appendHistoryRows(historySheet, rowsToAppend, historyHeaders.length);
-    appendHistoryRows(archiveSheet, rowsToAppend, historyHeaders.length);
+  if (rowsToAppendHistory.length > 0) {
+    appendHistoryRows(historySheet, rowsToAppendHistory, finalHistoryHeaders.length);
+  }
+
+  if (rowsToAppendArchive.length > 0) {
+    appendHistoryRows(archiveSheet, rowsToAppendArchive, finalArchiveHeaders.length);
   }
 }
 
@@ -322,28 +264,39 @@ function resetHistoryTables() {
 
 
 function ensureExactHistoryHeaders(sheet, headers) {
-  const lastRow = sheet.getLastRow();
+  ensureHistoryHeaders(sheet, headers);
+}
 
-  if (lastRow === 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+function ensureHistoryHeaders(sheet, requiredHeaders) {
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
     return;
   }
 
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
   const currentHeaders = sheet
-    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length))
-    .getValues()[0];
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map(header => String(header).trim());
 
-  const currentText = currentHeaders.join("|");
-  const expectedText = headers.join("|");
+  const existing = new Set(currentHeaders.filter(Boolean));
+  const missing = requiredHeaders.filter(header => !existing.has(String(header).trim()));
 
-  if (currentText !== expectedText) {
-    throw new Error(
-      sheet.getName() +
-      " headers do not match current HISTORY schema. Do not reset unless you intentionally want to rebuild HISTORY."
-    );
+  if (missing.length === 0) {
+    return;
   }
-}
 
+  sheet
+    .getRange(1, sheet.getLastColumn() + 1, 1, missing.length)
+    .setValues([missing]);
+
+  Logger.log(
+    "Added missing HISTORY headers to " +
+    sheet.getName() +
+    ": " +
+    missing.join(", ")
+  );
+}
 
 function rowArrayToObject(headers, row) {
   const obj = {};
@@ -541,3 +494,169 @@ function validatePregameSnapshotReady() {
   }
 }
 
+function ensureHistoryOddsColumns() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("HISTORY");
+
+  if (!sheet) {
+    throw new Error("HISTORY sheet not found.");
+  }
+
+  const requiredHeaders = [
+    "Open Away ML",
+    "Open Home ML",
+    "Latest Away ML",
+    "Latest Home ML",
+    "Pregame Away ML",
+    "Pregame Home ML",
+    "Away ML Move",
+    "Home ML Move",
+    "Model Pick Open ML",
+    "Model Pick Pregame ML",
+    "CLV",
+    "Market Moved Toward Pick",
+    "Steam Move Flag",
+    "Odds Snapshot Count",
+    "First Odds Snapshot Time",
+    "Last Odds Snapshot Time"
+  ];
+
+  const lastCol = sheet.getLastColumn();
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const existing = new Set(headers.map(h => String(h).trim()));
+
+  const missing = requiredHeaders.filter(h => !existing.has(h));
+
+  if (missing.length === 0) {
+    Logger.log("No missing HISTORY odds columns.");
+    return;
+  }
+
+  sheet
+    .getRange(1, lastCol + 1, 1, missing.length)
+    .setValues([missing]);
+
+  Logger.log("Added HISTORY odds columns: " + missing.join(", "));
+}
+
+function buildPregameHistoryObject_(row, matrixHeaders, matrixRow, snapshotTime) {
+  const gameId = row["Game ID"];
+  const awayTeam = row["Away Team"];
+  const homeTeam = row["Home Team"];
+  const modelPick = row["Model Pick"];
+
+  const modelPickSide =
+    modelPick === awayTeam ? "Away" :
+    modelPick === homeTeam ? "Home" :
+    "Coin Flip";
+
+  const awayML = parseHistoryNumber(row["Away ML"]);
+  const homeML = parseHistoryNumber(row["Home ML"]);
+
+  const awayMarketProbability = americanOddsToHistoryProbability(awayML);
+  const homeMarketProbability = americanOddsToHistoryProbability(homeML);
+
+  const marketFavorite = getMarketFavorite(awayTeam, homeTeam, awayML, homeML);
+  const marketUnderdog = getMarketUnderdog(awayTeam, homeTeam, awayML, homeML);
+
+  const modelPickML =
+    modelPick === awayTeam ? awayML :
+    modelPick === homeTeam ? homeML :
+    "";
+
+  const modelPickMarketProbability =
+    modelPick === awayTeam ? awayMarketProbability :
+    modelPick === homeTeam ? homeMarketProbability :
+    "";
+
+  const modelPickType =
+    modelPick === marketFavorite ? "Favorite" :
+    modelPick === marketUnderdog ? "Underdog" :
+    "None";
+
+  const bestEdge = findBestEdge(row);
+
+  const historyObject = {
+    "Snapshot Time": snapshotTime,
+    "Game ID": gameId,
+    "Game Date": row["Date"],
+
+    "Away Team": awayTeam,
+    "Home Team": homeTeam,
+    "Away Score": "",
+    "Home Score": "",
+    "Winner": "",
+
+    "Model Pick": modelPick,
+    "Model Pick Side": modelPickSide,
+    "Game Winner Correct?": "",
+
+    "Away Model Score": row["Away Model Score"],
+    "Home Model Score": row["Home Model Score"],
+    "Model Strength": row["Confidence"],
+
+    "Away Model Implied Probability": "",
+    "Home Model Implied Probability": "",
+    "Model Pick Implied Probability": "",
+
+    "Away ML": row["Away ML"],
+    "Home ML": row["Home ML"],
+    "Away Market Implied Probability": awayMarketProbability,
+    "Home Market Implied Probability": homeMarketProbability,
+    "Model Pick Market Implied Probability": modelPickMarketProbability,
+
+    "Market Favorite": marketFavorite,
+    "Market Underdog": marketUnderdog,
+    "Model Pick ML": modelPickML,
+    "Model Pick Type": modelPickType,
+
+    "Underdog Pick?": modelPickType === "Underdog",
+    "Underdog Won?": "",
+    "Favorite Pick?": modelPickType === "Favorite",
+    "Favorite Won?": "",
+
+    "Projected Edge %": "",
+    "Beat Market?": "",
+
+    "Largest Factor": bestEdge.name,
+    "Largest Factor Value": bestEdge.value,
+    "Flat Bet Profit": "",
+
+    "Final?": false,
+    "Source": "PREGAME_MODEL_MATRIX_SNAPSHOT",
+    "Model Version": getModelVersion()
+  };
+
+  matrixHeaders.forEach((header, index) => {
+    historyObject["MM_" + header] = matrixRow[index];
+  });
+
+  return historyObject;
+}
+
+function objectToRow_(object, headers) {
+  return headers.map(header => {
+    const key = String(header).trim();
+    return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : "";
+  });
+}
+
+function getPregameSnapshotGameTime_(row) {
+  const possibleHeaders = [
+    "Game Time",
+    "Start Time",
+    "Game DateTime",
+    "DateTime",
+    "Scheduled Time",
+    "First Pitch"
+  ];
+
+  for (const header of possibleHeaders) {
+    if (row[header]) {
+      const date = new Date(row[header]);
+      if (!isNaN(date.getTime())) return date;
+    }
+  }
+
+  return null;
+}

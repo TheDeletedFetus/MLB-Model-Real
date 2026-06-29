@@ -21,15 +21,15 @@ function runPregameSnapshotGatekeeper() {
     return;
   }
 
-  if (now > firstPitch) {
-    Logger.log("Warning: first pitch has already passed. Taking snapshot anyway.");
+  if (now >= firstPitch) {
+    Logger.log("Pregame snapshot skipped. First pitch has already passed: " + firstPitch);
+    return;
   }
 
   runPregameSnapshot();
 
   markPregameSnapshotRunToday(today);
 }
-
 
 function getTodayFirstPitchTime() {
   const rows = getSheetRows("RAW_Schedule");

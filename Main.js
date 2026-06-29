@@ -52,7 +52,6 @@ function runOddsSnapshot() {
 
 
 function runPregameSnapshot() {
-  importOdds();
 
   buildModelMatrix();
   scoreModelMatrix();

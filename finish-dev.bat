@@ -6,10 +6,16 @@ echo   MLB MODEL - FINISH DEVELOPMENT
 echo =====================================
 echo.
 
+echo Pulling latest Apps Script code...
+clasp pull
+
+echo.
+echo Staging Git changes...
 git add -A
 
 git diff --cached --quiet
 if %errorlevel%==0 (
+    echo.
     echo No changes detected.
     pause
     exit /b
@@ -22,7 +28,7 @@ set VERSION=%VERSION:;=%
 set VERSION=%VERSION: =%
 
 echo.
-echo Committing...
+echo Creating commit...
 git commit -m "%VERSION%"
 
 echo.
@@ -30,11 +36,7 @@ echo Pushing to GitHub...
 git push
 
 echo.
-echo Pushing to Google Apps Script...
-clasp push
-
-echo.
 echo =====================================
-echo Sync Complete
+echo GitHub Backup Complete
 echo =====================================
 pause
