@@ -1,4 +1,7 @@
 function runMorningCoreUpdate() {
+  importResults();          // yesterday's finals
+  updateHistoryResults();   // grades yesterday's HISTORY rows
+
   importSchedule();
 
   importTeamHitting();
@@ -21,8 +24,8 @@ function runMorningCoreUpdate() {
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
+  buildRollingFeatureTesting();
 }
-
 
 function runBullpenUpdate() {
   importBullpen();
@@ -48,12 +51,14 @@ function runOddsSnapshot() {
 }
 
 
-// NEW v0.1.1 FUNCTION
-// Run this before games start.
-// This stores the actual pregame model state in HISTORY.
 function runPregameSnapshot() {
+  importOdds();
+
   buildModelMatrix();
   scoreModelMatrix();
+
+  validatePregameSnapshotReady();
+
   buildTodayView();
   buildDashboard();
 
@@ -63,10 +68,6 @@ function runPregameSnapshot() {
   buildRollingFeatureTesting();
 }
 
-
-// UPDATED v0.1.1 FUNCTION
-// This no longer appends HISTORY rows.
-// It only imports results and updates existing pregame rows.
 function runResultsAndHistory() {
   importResults();
 
@@ -77,6 +78,5 @@ function runResultsAndHistory() {
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
-
   buildRollingFeatureTesting();
 }

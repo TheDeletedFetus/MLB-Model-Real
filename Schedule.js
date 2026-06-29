@@ -7,6 +7,7 @@ function getPitcherHand(playerId) {
   return data.people?.[0]?.pitchHand?.code || "";
 }
 
+
 function importSchedule() {
   const sheet = getOrCreateSheet("RAW_Schedule");
   sheet.clearContents();
@@ -23,6 +24,7 @@ function importSchedule() {
 
   const rows = [[
     "Date",
+    "Game Time",
     "Game ID",
     "Away Team",
     "Home Team",
@@ -36,24 +38,25 @@ function importSchedule() {
     "Venue"
   ]];
 
-  const games = data.dates[0]?.games || [];
+  const games = data.dates?.[0]?.games || [];
 
   games.forEach(game => {
-    const awayProbable = game.teams.away.probablePitcher || {};
-    const homeProbable = game.teams.home.probablePitcher || {};
+    const awayProbable = game.teams?.away?.probablePitcher || {};
+    const homeProbable = game.teams?.home?.probablePitcher || {};
 
     rows.push([
       today,
-      game.gamePk,
-      game.teams.away.team.name,
-      game.teams.home.team.name,
+      game.gameDate || "",
+      game.gamePk || "",
+      game.teams?.away?.team?.name || "",
+      game.teams?.home?.team?.name || "",
       awayProbable.fullName || "",
       homeProbable.fullName || "",
       awayProbable.id || "",
       homeProbable.id || "",
       getPitcherHand(awayProbable.id),
       getPitcherHand(homeProbable.id),
-      game.status.detailedState || "",
+      game.status?.detailedState || "",
       game.venue?.name || ""
     ]);
   });

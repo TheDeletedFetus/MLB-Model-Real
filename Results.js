@@ -2,9 +2,11 @@ function importResults() {
   importResultsForDate(getYesterdayText());
 }
 
+
 function importResultsToday() {
   importResultsForDate(getTodayText());
 }
+
 
 function importResultsForDate(targetDate) {
   const sheet = getOrCreateSheet("RAW_Results");
@@ -62,6 +64,12 @@ function importResultsForDate(targetDate) {
 
   sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
 }
+
+
+function getTodayText() {
+  return Utilities.formatDate(new Date(), "America/New_York", "yyyy-MM-dd");
+}
+
 
 function getYesterdayText() {
   const date = new Date();

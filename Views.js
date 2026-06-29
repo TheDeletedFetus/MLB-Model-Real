@@ -2,7 +2,7 @@ function buildTodayView() {
   const sheet = getOrCreateSheet("Today");
   sheet.clearContents();
 
-  const rows = getSheetRows("Model_Matrix");
+  const rows = getSheetRows("MODEL_MATRIX");
 
   const output = [[
     "Game",
@@ -55,7 +55,7 @@ function buildDashboard() {
   sheet.clearContents();
 
   const historyRows = getSheetRows("HISTORY");
-  const matrixRows = getSheetRows("Model_Matrix");
+  const matrixRows = getSheetRows("MODEL_MATRIX");
 
   const summary = buildPerformanceSummary(historyRows);
 

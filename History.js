@@ -33,7 +33,6 @@ function appendPregameHistorySnapshot() {
     const gameId = row["Game ID"];
     if (!gameId) return;
 
-    // One permanent pregame snapshot per game.
     if (existingGameIds.has(String(gameId))) return;
 
     const awayTeam = row["Away Team"];
@@ -78,21 +77,21 @@ function appendPregameHistorySnapshot() {
 
       awayTeam,
       homeTeam,
-      "", // Away Score - filled postgame
-      "", // Home Score - filled postgame
-      "", // Winner - filled postgame
+      "",
+      "",
+      "",
 
       modelPick,
       modelPickSide,
-      "", // Game Winner Correct? - filled postgame
+      "",
 
       row["Away Model Score"],
       row["Home Model Score"],
       row["Confidence"],
 
-      "", // Away Model Implied Probability - future calibrated value
-      "", // Home Model Implied Probability - future calibrated value
-      "", // Model Pick Implied Probability - future calibrated value
+      "",
+      "",
+      "",
 
       row["Away ML"],
       row["Home ML"],
@@ -106,19 +105,20 @@ function appendPregameHistorySnapshot() {
       modelPickType,
 
       modelPickType === "Underdog",
-      "", // Underdog Won? - filled postgame
+      "",
       modelPickType === "Favorite",
-      "", // Favorite Won? - filled postgame
+      "",
 
-      "", // Projected Edge % - future calibrated value
-      "", // Beat Market? - future calibrated value
+      "",
+      "",
 
       bestEdge.name,
       bestEdge.value,
-      "", // Flat Bet Profit - filled postgame
+      "",
 
       false,
-      "PREGAME_MODEL_MATRIX_SNAPSHOT_v0.1.1"
+      "PREGAME_MODEL_MATRIX_SNAPSHOT",
+      getModelVersion()
     ];
 
     rowsToAppend.push(baseRow.concat(matrixRow));
@@ -129,7 +129,6 @@ function appendPregameHistorySnapshot() {
     appendHistoryRows(archiveSheet, rowsToAppend, historyHeaders.length);
   }
 }
-
 
 function updateHistoryResults() {
   const historySheet = getOrCreateSheet("HISTORY");
@@ -295,7 +294,8 @@ function getHistoryBaseHeaders() {
     "Flat Bet Profit",
 
     "Final?",
-    "Source"
+    "Source",
+    "Model Version"
   ];
 }
 
@@ -359,12 +359,14 @@ function rowArrayToObject(headers, row) {
 function isFinalResult(result) {
   const finalFlag = result["Final?"];
   const status = result["Status"];
+  const abstractState = result["Abstract State"];
 
   return (
     finalFlag === true ||
     finalFlag === "TRUE" ||
     finalFlag === "Yes" ||
     finalFlag === "Final" ||
+    abstractState === "Final" ||
     status === "Final" ||
     status === "Game Over"
   );
@@ -459,3 +461,83 @@ function normalizeBooleanHistory(value) {
   if (value === false || value === "FALSE" || value === "No") return false;
   return null;
 }
+
+
+function debugHistoryGameId() {
+  const sh = SpreadsheetApp.getActive().getSheetByName("HISTORY");
+  const values = sh.getDataRange().getValues();
+  const headers = values[0];
+
+  const gameIdCol = headers.indexOf("Game ID");
+  Logger.log("Game ID col = " + gameIdCol);
+
+  for (let r = 1; r < values.length; r++) {
+    if (String(values[r][gameIdCol]) === "822799") {
+      Logger.log("FOUND ROW " + (r + 1));
+      Logger.log(values[r]);
+      return;
+    }
+  }
+
+  Logger.log("NOT FOUND in HISTORY");
+}
+
+
+function validatePregameSnapshotReady() {
+  const matrixSheet = getOrCreateSheet("MODEL_MATRIX");
+  const values = matrixSheet.getDataRange().getValues();
+
+  if (values.length < 2) {
+    throw new Error("Pregame snapshot aborted: MODEL_MATRIX has no game rows.");
+  }
+
+  const headers = values[0];
+  const rows = values.slice(1);
+
+  const requiredHeaders = [
+    "Date",
+    "Game ID",
+    "Away Team",
+    "Home Team",
+    "Away Model Score",
+    "Home Model Score",
+    "Model Pick",
+    "Confidence"
+  ];
+
+  requiredHeaders.forEach(header => {
+    if (headers.indexOf(header) === -1) {
+      throw new Error("Pregame snapshot aborted: missing MODEL_MATRIX column: " + header);
+    }
+  });
+
+  const gameIdCol = headers.indexOf("Game ID");
+  const awayTeamCol = headers.indexOf("Away Team");
+  const homeTeamCol = headers.indexOf("Home Team");
+  const modelPickCol = headers.indexOf("Model Pick");
+  const confidenceCol = headers.indexOf("Confidence");
+
+  const badRows = [];
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+
+    const gameId = row[gameIdCol];
+    const awayTeam = row[awayTeamCol];
+    const homeTeam = row[homeTeamCol];
+    const modelPick = row[modelPickCol];
+    const confidence = row[confidenceCol];
+
+    if (!gameId || !awayTeam || !homeTeam || !modelPick || confidence === "") {
+      badRows.push(rowNumber);
+    }
+  });
+
+  if (badRows.length > 0) {
+    throw new Error(
+      "Pregame snapshot aborted: incomplete MODEL_MATRIX rows: " +
+      badRows.join(", ")
+    );
+  }
+}
+
