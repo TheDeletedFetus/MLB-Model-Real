@@ -1,7 +1,7 @@
 @echo off
 cd /d "C:\Users\rwest\OneDrive\Desktop\MLB Model"
 
-for /f "tokens=2 delims==" %%A in ('findstr /C:"MODEL_VERSION =" Version.js') do set VERSION_RAW=%%A
+for /f "tokens=2 delims==" %%A in ('findstr /C:"PROJECT_VERSION =" Version.js') do set VERSION_RAW=%%A
 
 set VERSION=%VERSION_RAW:"=%
 set VERSION=%VERSION:;=%
