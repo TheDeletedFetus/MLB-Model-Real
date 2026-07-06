@@ -1,5 +1,5 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.1.2
+ * ITERATIVE MODEL OPTIMIZER v0.1.3
  *
  * Safe optimizer:
  * - Does NOT overwrite live Weight
@@ -7,6 +7,7 @@
  * - Writes full results to OPTIMIZER_ITERATIVE
  * - Supports current Settings headers:
  *   Stat, Category, Active, Weight, Direction, Suggested Weight
+ * - Supports flexible HISTORY header aliases
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -38,12 +39,24 @@ const ITER_OPT = {
     optimize: "Optimize?"
   },
 
-  HISTORY_HEADERS: {
-    awayTeam: "Away Team",
-    homeTeam: "Home Team",
-    awayML: "Away Moneyline",
-    homeML: "Home Moneyline",
-    winner: "Winner"
+  HISTORY_KEYS: {
+    awayTeam: "awayTeam",
+    homeTeam: "homeTeam",
+    awayML: "awayML",
+    homeML: "homeML",
+    winner: "winner",
+    awayFinal: "awayFinal",
+    homeFinal: "homeFinal"
+  },
+
+  HISTORY_ALIASES: {
+    awayTeam: ["Away Team", "Away", "AwayTeam", "Visitor", "Visitor Team", "Road Team"],
+    homeTeam: ["Home Team", "Home", "HomeTeam"],
+    awayML: ["Away Moneyline", "Away ML", "Away Odds", "Away Money Line", "Away Line", "Away_Moneyline"],
+    homeML: ["Home Moneyline", "Home ML", "Home Odds", "Home Money Line", "Home Line", "Home_Moneyline"],
+    winner: ["Winner", "Game Winner", "Actual Winner", "Winning Team", "Final Winner"],
+    awayFinal: ["Away Final", "Away Score", "Away Runs", "Away Final Score"],
+    homeFinal: ["Home Final", "Home Score", "Home Runs", "Home Final Score"]
   }
 };
 
@@ -188,9 +201,9 @@ function backtestWeights_(history, settings, weightsByFeature) {
   let totalRisk = 0;
 
   history.rows.forEach(row => {
-    const awayTeam = row[history.headers[ITER_OPT.HISTORY_HEADERS.awayTeam]];
-    const homeTeam = row[history.headers[ITER_OPT.HISTORY_HEADERS.homeTeam]];
-    const winner = row[history.headers[ITER_OPT.HISTORY_HEADERS.winner]];
+    const awayTeam = row[history.indexes.awayTeam];
+    const homeTeam = row[history.indexes.homeTeam];
+    const winner = resolveWinner_(row, history.indexes, awayTeam, homeTeam);
 
     if (!awayTeam || !homeTeam || !winner) return;
 
@@ -204,8 +217,8 @@ function backtestWeights_(history, settings, weightsByFeature) {
       const awayHeader = "Away " + feature.name;
       const homeHeader = "Home " + feature.name;
 
-      const awayIdx = history.headers[awayHeader];
-      const homeIdx = history.headers[homeHeader];
+      const awayIdx = getHeaderIndex_(history.headers, awayHeader);
+      const homeIdx = getHeaderIndex_(history.headers, homeHeader);
 
       if (awayIdx === undefined || homeIdx === undefined) return;
 
@@ -222,12 +235,9 @@ function backtestWeights_(history, settings, weightsByFeature) {
 
     const pick = awayScore > homeScore ? awayTeam : homeTeam;
     const pickedAway = pick === awayTeam;
+    const moneylineIndex = pickedAway ? history.indexes.awayML : history.indexes.homeML;
+    const moneyline = Number(row[moneylineIndex]);
 
-    const moneylineHeader = pickedAway
-      ? ITER_OPT.HISTORY_HEADERS.awayML
-      : ITER_OPT.HISTORY_HEADERS.homeML;
-
-    const moneyline = Number(row[history.headers[moneylineHeader]]);
     if (!isFinite(moneyline)) return;
 
     games++;
@@ -250,6 +260,24 @@ function backtestWeights_(history, settings, weightsByFeature) {
     profit,
     roi: totalRisk ? profit / totalRisk : 0
   };
+}
+
+
+function resolveWinner_(row, indexes, awayTeam, homeTeam) {
+  if (indexes.winner !== undefined) {
+    return row[indexes.winner];
+  }
+
+  if (indexes.awayFinal !== undefined && indexes.homeFinal !== undefined) {
+    const awayFinal = Number(row[indexes.awayFinal]);
+    const homeFinal = Number(row[indexes.homeFinal]);
+
+    if (isFinite(awayFinal) && isFinite(homeFinal) && awayFinal !== homeFinal) {
+      return awayFinal > homeFinal ? awayTeam : homeTeam;
+    }
+  }
+
+  return "";
 }
 
 
@@ -331,9 +359,16 @@ function readOptimizerSettings_(sheet) {
 function readHistory_(sheet) {
   const values = sheet.getDataRange().getValues();
   const headerInfo = findHistoryHeaderRow_(values);
+  const headers = headerInfo.headers;
+  const indexes = headerInfo.indexes;
+
+  if (indexes.winner === undefined && (indexes.awayFinal === undefined || indexes.homeFinal === undefined)) {
+    throw new Error("HISTORY must contain either a winner column or both final score columns. Found headers: " + headerInfo.foundHeaders.join(" | "));
+  }
 
   return {
-    headers: headerInfo.headers,
+    headers,
+    indexes,
     headerRowNumber: headerInfo.rowIndex + 1,
     rows: values.slice(headerInfo.rowIndex + 1)
   };
@@ -465,15 +500,42 @@ function findSettingsHeaderRow_(values) {
 
 
 function findHistoryHeaderRow_(values) {
-  const required = [
-    ITER_OPT.HISTORY_HEADERS.awayTeam,
-    ITER_OPT.HISTORY_HEADERS.homeTeam,
-    ITER_OPT.HISTORY_HEADERS.awayML,
-    ITER_OPT.HISTORY_HEADERS.homeML,
-    ITER_OPT.HISTORY_HEADERS.winner
-  ];
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    const headers = mapHeaders_(values[rowIndex]);
+    const foundHeaders = Object.keys(headers);
 
-  return findHeaderRow_(values, required, "HISTORY");
+    const indexes = {
+      awayTeam: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.awayTeam),
+      homeTeam: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.homeTeam),
+      awayML: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.awayML),
+      homeML: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.homeML),
+      winner: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.winner),
+      awayFinal: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.awayFinal),
+      homeFinal: findAliasIndex_(headers, ITER_OPT.HISTORY_ALIASES.homeFinal)
+    };
+
+    const hasTeams = indexes.awayTeam !== undefined && indexes.homeTeam !== undefined;
+    const hasOdds = indexes.awayML !== undefined && indexes.homeML !== undefined;
+    const hasResult = indexes.winner !== undefined || (indexes.awayFinal !== undefined && indexes.homeFinal !== undefined);
+
+    if (hasTeams && hasOdds && hasResult) {
+      return {
+        rowIndex,
+        headers,
+        indexes,
+        foundHeaders
+      };
+    }
+  }
+
+  const sampledHeaders = values
+    .slice(0, 10)
+    .map((row, i) => "Row " + (i + 1) + ": " + row.filter(Boolean).join(" | "))
+    .join("\n");
+
+  throw new Error(
+    "Could not find usable HISTORY header row. Need away team, home team, away ML, home ML, and either winner or final scores. Sampled rows:\n" + sampledHeaders
+  );
 }
 
 
@@ -497,6 +559,30 @@ function findHeaderRow_(values, requiredHeaders, sheetNameForError) {
 }
 
 
+function findAliasIndex_(headers, aliases) {
+  for (let i = 0; i < aliases.length; i++) {
+    const idx = getHeaderIndex_(headers, aliases[i]);
+    if (idx !== undefined) return idx;
+  }
+
+  return undefined;
+}
+
+
+function getHeaderIndex_(headers, headerName) {
+  if (headers[headerName] !== undefined) return headers[headerName];
+
+  const target = normalizeHeader_(headerName);
+  const keys = Object.keys(headers);
+
+  for (let i = 0; i < keys.length; i++) {
+    if (normalizeHeader_(keys[i]) === target) return headers[keys[i]];
+  }
+
+  return undefined;
+}
+
+
 function mapHeaders_(headerRow) {
   const map = {};
 
@@ -507,6 +593,13 @@ function mapHeaders_(headerRow) {
   });
 
   return map;
+}
+
+
+function normalizeHeader_(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
 }
 
 
