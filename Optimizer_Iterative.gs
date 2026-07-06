@@ -1,13 +1,11 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.1.3
+ * ITERATIVE MODEL OPTIMIZER v0.1.4
  *
  * Safe optimizer:
  * - Does NOT overwrite live Weight
  * - Writes Suggested Weight only
  * - Writes full results to OPTIMIZER_ITERATIVE
- * - Supports current Settings headers:
- *   Stat, Category, Active, Weight, Direction, Suggested Weight
- * - Supports flexible HISTORY header aliases
+ * - Stage 1 only: tests each active stat individually
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -19,10 +17,8 @@ const ITER_OPT = {
   OUTPUT_SHEET: "OPTIMIZER_ITERATIVE",
 
   DEFAULT_MIN_WEIGHT: 0,
-  DEFAULT_MAX_WEIGHT: 20,
+  DEFAULT_MAX_WEIGHT: 10,
 
-  MAX_STAGE1_FEATURES_FOR_COMBOS: 8,
-  MAX_PAIRS_TO_KEEP: 8,
   MIN_GAMES: 50,
   MIN_WIN_RATE: 0.52,
   MIN_ROI_IMPROVEMENT: 0.005,
@@ -37,16 +33,6 @@ const ITER_OPT = {
     minWeight: "Min Weight",
     maxWeight: "Max Weight",
     optimize: "Optimize?"
-  },
-
-  HISTORY_KEYS: {
-    awayTeam: "awayTeam",
-    homeTeam: "homeTeam",
-    awayML: "awayML",
-    homeML: "homeML",
-    winner: "winner",
-    awayFinal: "awayFinal",
-    homeFinal: "homeFinal"
   },
 
   HISTORY_ALIASES: {
@@ -107,6 +93,14 @@ function runIterativeOptimizer() {
 
         const perf = backtestWeights_(history, settings, testWeights);
 
+        results.push(makeResultRow_(
+          "STAGE 1 TEST",
+          feature.name + " = " + weight,
+          testWeights,
+          perf,
+          baseline
+        ));
+
         if (!best || isBetterResult_(perf, best.perf, baseline)) {
           best = {
             feature,
@@ -131,55 +125,13 @@ function runIterativeOptimizer() {
 
   stage1.sort((a, b) => b.perf.roi - a.perf.roi);
 
-  const topSingles = stage1.slice(0, ITER_OPT.MAX_STAGE1_FEATURES_FOR_COMBOS);
-  const stage2 = [];
-
-  for (let i = 0; i < topSingles.length; i++) {
-    for (let j = i + 1; j < topSingles.length; j++) {
-      const a = topSingles[i];
-      const b = topSingles[j];
-
-      const testWeights = Object.assign({}, baselineWeights);
-      testWeights[a.feature.name] = a.weight;
-      testWeights[b.feature.name] = b.weight;
-
-      const perf = backtestWeights_(history, settings, testWeights);
-
-      stage2.push({
-        label: a.feature.name + " + " + b.feature.name,
-        weights: testWeights,
-        perf
-      });
-
-      results.push(makeResultRow_(
-        "STAGE 2 - PAIR",
-        a.feature.name + " = " + a.weight + ", " + b.feature.name + " = " + b.weight,
-        testWeights,
-        perf,
-        baseline
-      ));
-    }
-  }
-
-  stage2.sort((a, b) => b.perf.roi - a.perf.roi);
-
-  const candidates = stage1
-    .map(item => ({
-      label: item.feature.name,
-      weights: item.weights,
-      perf: item.perf
-    }))
-    .concat(stage2.slice(0, ITER_OPT.MAX_PAIRS_TO_KEEP));
-
-  candidates.sort((a, b) => b.perf.roi - a.perf.roi);
-
-  const accepted = candidates.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
-  const finalCandidate = accepted || candidates[0];
+  const accepted = stage1.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
+  const finalCandidate = accepted || stage1[0];
 
   if (finalCandidate) {
     results.push(makeResultRow_(
       accepted ? "FINAL RECOMMENDATION" : "FINAL WATCHLIST",
-      finalCandidate.label,
+      finalCandidate.feature.name,
       finalCandidate.weights,
       finalCandidate.perf,
       baseline
@@ -214,11 +166,8 @@ function backtestWeights_(history, settings, weightsByFeature) {
       const weight = Number(weightsByFeature[feature.name] || 0);
       if (weight === 0) return;
 
-      const awayHeader = "Away " + feature.name;
-      const homeHeader = "Home " + feature.name;
-
-      const awayIdx = getHeaderIndex_(history.headers, awayHeader);
-      const homeIdx = getHeaderIndex_(history.headers, homeHeader);
+      const awayIdx = resolveFeatureHeaderIndex_(history.headers, "Away", feature.name);
+      const homeIdx = resolveFeatureHeaderIndex_(history.headers, "Home", feature.name);
 
       if (awayIdx === undefined || homeIdx === undefined) return;
 
@@ -260,6 +209,24 @@ function backtestWeights_(history, settings, weightsByFeature) {
     profit,
     roi: totalRisk ? profit / totalRisk : 0
   };
+}
+
+
+function resolveFeatureHeaderIndex_(headers, side, statName) {
+  const candidates = [
+    side + " " + statName,
+    side + "_" + statName,
+    side + statName,
+    side + " Team " + statName,
+    side + " " + statName + " Value"
+  ];
+
+  for (let i = 0; i < candidates.length; i++) {
+    const idx = getHeaderIndex_(headers, candidates[i]);
+    if (idx !== undefined) return idx;
+  }
+
+  return undefined;
 }
 
 
@@ -359,7 +326,6 @@ function readOptimizerSettings_(sheet) {
 function readHistory_(sheet) {
   const values = sheet.getDataRange().getValues();
   const headerInfo = findHistoryHeaderRow_(values);
-  const headers = headerInfo.headers;
   const indexes = headerInfo.indexes;
 
   if (indexes.winner === undefined && (indexes.awayFinal === undefined || indexes.homeFinal === undefined)) {
@@ -367,7 +333,7 @@ function readHistory_(sheet) {
   }
 
   return {
-    headers,
+    headers: headerInfo.headers,
     indexes,
     headerRowNumber: headerInfo.rowIndex + 1,
     rows: values.slice(headerInfo.rowIndex + 1)
