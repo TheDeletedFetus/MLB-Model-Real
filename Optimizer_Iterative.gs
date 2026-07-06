@@ -1,10 +1,11 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.1
+ * ITERATIVE MODEL OPTIMIZER v0.1.1
  *
  * Safe optimizer:
  * - Does NOT overwrite Current Weight
  * - Writes Suggested Weight only
  * - Writes full results to OPTIMIZER_ITERATIVE
+ * - Finds header rows dynamically instead of assuming row 1
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -43,9 +44,6 @@ const ITER_OPT = {
 };
 
 
-/**
- * Main runner.
- */
 function runIterativeOptimizer() {
   const ss = SpreadsheetApp.getActive();
 
@@ -61,7 +59,7 @@ function runIterativeOptimizer() {
   const history = readHistory_(historySheet);
 
   if (history.rows.length < ITER_OPT.MIN_GAMES) {
-    throw new Error("Not enough HISTORY rows for optimizer testing.");
+    throw new Error("Not enough HISTORY rows for optimizer testing. Found " + history.rows.length + ". Minimum required: " + ITER_OPT.MIN_GAMES);
   }
 
   const baselineWeights = {};
@@ -80,10 +78,6 @@ function runIterativeOptimizer() {
     baseline
   ));
 
-  /***************
-   * Stage 1
-   * Individual feature testing.
-   ***************/
   const stage1 = [];
 
   settings.features
@@ -121,10 +115,6 @@ function runIterativeOptimizer() {
 
   stage1.sort((a, b) => b.perf.roi - a.perf.roi);
 
-  /***************
-   * Stage 2
-   * Pair testing from strongest Stage 1 features.
-   ***************/
   const topSingles = stage1.slice(0, ITER_OPT.MAX_STAGE1_FEATURES_FOR_COMBOS);
   const stage2 = [];
 
@@ -158,10 +148,6 @@ function runIterativeOptimizer() {
   stage2.sort((a, b) => b.perf.roi - a.perf.roi);
   const topPairs = stage2.slice(0, ITER_OPT.MAX_PAIRS_TO_KEEP);
 
-  /***************
-   * Stage 3
-   * Triple testing from strongest pairs plus strongest singles.
-   ***************/
   const stage3 = [];
 
   for (let pairIndex = 0; pairIndex < topPairs.length; pairIndex++) {
@@ -196,9 +182,6 @@ function runIterativeOptimizer() {
 
   stage3.sort((a, b) => b.perf.roi - a.perf.roi);
 
-  /***************
-   * Final pick.
-   ***************/
   const candidates = stage1
     .map(item => ({
       label: item.feature.name,
@@ -231,9 +214,6 @@ function runIterativeOptimizer() {
 }
 
 
-/**
- * Backtests a weight set against HISTORY.
- */
 function backtestWeights_(history, settings, weightsByFeature) {
   let games = 0;
   let wins = 0;
@@ -307,18 +287,12 @@ function backtestWeights_(history, settings, weightsByFeature) {
 }
 
 
-/**
- * American odds profit on fixed risk amount.
- */
 function americanOddsProfit_(odds, risk) {
   if (odds > 0) return risk * (odds / 100);
   return risk * (100 / Math.abs(odds));
 }
 
 
-/**
- * Acceptance guardrails.
- */
 function passesAcceptanceRules_(perf, baseline) {
   if (perf.games < ITER_OPT.MIN_GAMES) return false;
   if (perf.winRate < ITER_OPT.MIN_WIN_RATE) return false;
@@ -341,12 +315,8 @@ function isBetterResult_(test, currentBest, baseline) {
 }
 
 
-/**
- * Reads Settings sheet.
- */
 function readOptimizerSettings_(sheet) {
   const values = sheet.getDataRange().getValues();
-  const headers = mapHeaders_(values[0]);
 
   const required = [
     ITER_OPT.HEADERS.feature,
@@ -358,15 +328,13 @@ function readOptimizerSettings_(sheet) {
     ITER_OPT.HEADERS.direction
   ];
 
-  required.forEach(header => {
-    if (headers[header] === undefined) {
-      throw new Error("Missing Settings header: " + header);
-    }
-  });
+  const headerInfo = findHeaderRow_(values, required, "Settings");
+  const headers = headerInfo.headers;
+  const headerRowIndex = headerInfo.rowIndex;
 
   const features = [];
 
-  for (let rowIndex = 1; rowIndex < values.length; rowIndex++) {
+  for (let rowIndex = headerRowIndex + 1; rowIndex < values.length; rowIndex++) {
     const row = values[rowIndex];
     const name = row[headers[ITER_OPT.HEADERS.feature]];
     if (!name) continue;
@@ -383,36 +351,42 @@ function readOptimizerSettings_(sheet) {
     });
   }
 
-  return { headers, features };
-}
-
-
-/**
- * Reads HISTORY sheet.
- */
-function readHistory_(sheet) {
-  const values = sheet.getDataRange().getValues();
-  const headers = mapHeaders_(values[0]);
-
-  Object.values(ITER_OPT.HISTORY_HEADERS).forEach(header => {
-    if (headers[header] === undefined) {
-      throw new Error("Missing HISTORY header: " + header);
-    }
-  });
-
   return {
     headers,
-    rows: values.slice(1)
+    headerRowNumber: headerRowIndex + 1,
+    features
   };
 }
 
 
-/**
- * Creates missing optimizer columns on Settings.
- */
+function readHistory_(sheet) {
+  const values = sheet.getDataRange().getValues();
+  const required = Object.values(ITER_OPT.HISTORY_HEADERS);
+  const headerInfo = findHeaderRow_(values, required, "HISTORY");
+
+  return {
+    headers: headerInfo.headers,
+    headerRowNumber: headerInfo.rowIndex + 1,
+    rows: values.slice(headerInfo.rowIndex + 1)
+  };
+}
+
+
 function ensureOptimizerSettingsColumns_(sheet) {
   const values = sheet.getDataRange().getValues();
-  const headerRow = values[0].map(String);
+
+  const baseRequired = [
+    ITER_OPT.HEADERS.feature,
+    ITER_OPT.HEADERS.active,
+    ITER_OPT.HEADERS.currentWeight,
+    ITER_OPT.HEADERS.minWeight,
+    ITER_OPT.HEADERS.maxWeight,
+    ITER_OPT.HEADERS.optimize
+  ];
+
+  const headerInfo = findHeaderRow_(values, baseRequired, "Settings");
+  const headerRowNumber = headerInfo.rowIndex + 1;
+  let headers = headerInfo.headers;
 
   const needed = [
     ITER_OPT.HEADERS.suggestedWeight,
@@ -420,25 +394,26 @@ function ensureOptimizerSettingsColumns_(sheet) {
   ];
 
   needed.forEach(header => {
-    if (headerRow.indexOf(header) === -1) {
-      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(header);
+    if (headers[header] === undefined) {
+      sheet.getRange(headerRowNumber, sheet.getLastColumn() + 1).setValue(header);
     }
   });
 
   const refreshed = sheet.getDataRange().getValues();
-  const headers = mapHeaders_(refreshed[0]);
+  headers = mapHeaders_(refreshed[headerRowNumber - 1]);
+
   const directionCol = headers[ITER_OPT.HEADERS.direction] + 1;
 
-  for (let row = 2; row <= sheet.getLastRow(); row++) {
+  for (let row = headerRowNumber + 1; row <= sheet.getLastRow(); row++) {
+    const featureName = sheet.getRange(row, headers[ITER_OPT.HEADERS.feature] + 1).getValue();
+    if (!featureName) continue;
+
     const cell = sheet.getRange(row, directionCol);
     if (cell.getValue() === "") cell.setValue(1);
   }
 }
 
 
-/**
- * Writes Suggested Weight only. Live Current Weight is untouched.
- */
 function writeSuggestedWeights_(sheet, settings, weightsByFeature, accepted) {
   const suggestedCol = settings.headers[ITER_OPT.HEADERS.suggestedWeight] + 1;
 
@@ -453,9 +428,6 @@ function writeSuggestedWeights_(sheet, settings, weightsByFeature, accepted) {
 }
 
 
-/**
- * Writes optimizer output tab.
- */
 function writeOptimizerResults_(ss, results, features) {
   let sheet = ss.getSheetByName(ITER_OPT.OUTPUT_SHEET);
   if (!sheet) sheet = ss.insertSheet(ITER_OPT.OUTPUT_SHEET);
@@ -501,7 +473,6 @@ function writeOptimizerResults_(ss, results, features) {
   });
 
   sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
-
   sheet.getRange(1, 1, 1, output[0].length).setFontWeight("bold");
 
   if (output.length > 1) {
@@ -514,9 +485,6 @@ function writeOptimizerResults_(ss, results, features) {
 }
 
 
-/**
- * Result row builder.
- */
 function makeResultRow_(stage, test, weights, perf, baseline) {
   const roiChange = perf.roi - baseline.roi;
 
@@ -543,6 +511,26 @@ function makeResultRow_(stage, test, weights, perf, baseline) {
     decision,
     weights
   };
+}
+
+
+function findHeaderRow_(values, requiredHeaders, sheetNameForError) {
+  for (let rowIndex = 0; rowIndex < values.length; rowIndex++) {
+    const headers = mapHeaders_(values[rowIndex]);
+    const foundAll = requiredHeaders.every(header => headers[header] !== undefined);
+
+    if (foundAll) {
+      return {
+        rowIndex,
+        headers
+      };
+    }
+  }
+
+  throw new Error(
+    "Could not find header row on " + sheetNameForError +
+    ". Required headers: " + requiredHeaders.join(", ")
+  );
 }
 
 
