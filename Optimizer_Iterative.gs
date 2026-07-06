@@ -1,5 +1,5 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.2.1
+ * ITERATIVE MODEL OPTIMIZER v0.2.2
  *
  * Purpose:
  * - Read Settings once
@@ -9,8 +9,10 @@
  * - Write OPTIMIZER_ITERATIVE once
  * - Write Suggested Weight only
  *
- * This version intentionally does NOT run pair/triple tests.
- * Pair testing should be added only after Stage 1 results match expectations.
+ * Important HISTORY format note:
+ * Current HISTORY stores pregame Model_Matrix fields with MM_ prefixes,
+ * e.g. MM_Away Runs/Game, MM_Home Runs/Game, MM_Away ML, MM_Home ML.
+ * This optimizer now explicitly supports that format.
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -41,13 +43,27 @@ const ITER_OPT = {
   },
 
   HISTORY_ALIASES: {
-    awayTeam: ["Away Team", "Away", "AwayTeam", "Visitor", "Visitor Team", "Road Team"],
-    homeTeam: ["Home Team", "Home", "HomeTeam"],
-    awayML: ["Away Moneyline", "Away ML", "Away Odds", "Away Money Line", "Away Line", "Away_Moneyline"],
-    homeML: ["Home Moneyline", "Home ML", "Home Odds", "Home Money Line", "Home Line", "Home_Moneyline"],
+    awayTeam: ["Away Team", "MM_Away Team", "Away", "AwayTeam", "Visitor", "Visitor Team", "Road Team"],
+    homeTeam: ["Home Team", "MM_Home Team", "Home", "HomeTeam"],
+    awayML: ["MM_Away ML", "Pregame Away ML", "Latest Away ML", "Away ML", "Away Moneyline", "Away Odds", "Away Money Line", "Away Line"],
+    homeML: ["MM_Home ML", "Pregame Home ML", "Latest Home ML", "Home ML", "Home Moneyline", "Home Odds", "Home Money Line", "Home Line"],
     winner: ["Winner", "Game Winner", "Actual Winner", "Winning Team", "Final Winner"],
-    awayFinal: ["Away Final", "Away Score", "Away Runs", "Away Final Score"],
-    homeFinal: ["Home Final", "Home Score", "Home Runs", "Home Final Score"]
+    awayFinal: ["Away Score", "Away Final", "Away Runs", "Away Final Score"],
+    homeFinal: ["Home Score", "Home Final", "Home Runs", "Home Final Score"]
+  },
+
+  STAT_ALIASES: {
+    "OPS vs Hand": ["OPS vs SP Hand"],
+    "Home OPS": ["Split OPS"],
+    "Road OPS": ["Split OPS"],
+    "Home ERA": ["Split ERA"],
+    "Road ERA": ["Split ERA"],
+    "Home WHIP": ["Split WHIP"],
+    "Road WHIP": ["Split WHIP"],
+    "Home K/9": ["Split K/9"],
+    "Road K/9": ["Split K/9"],
+    "Home K/BB": ["Split K/BB"],
+    "Road K/BB": ["Split K/BB"]
   }
 };
 
@@ -67,7 +83,7 @@ function runIterativeOptimizer() {
   const games = buildOptimizerGameCache_(historyRaw, settings.features);
 
   if (games.length < ITER_OPT.MIN_GAMES) {
-    throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES);
+    throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES + ". Check odds availability and MM_ feature mapping.");
   }
 
   const baselineWeights = buildWeightMap_(settings.features, "currentWeight");
@@ -206,7 +222,7 @@ function backtestCachedGames_(games, features, weightsByFeature) {
     gamesCount++;
     totalRisk += 100;
 
-    if (cleanText_(pick) === cleanText_(game.winner)) {
+    if (sameTeam_(pick, game.winner)) {
       wins++;
       profit += americanOddsProfit_(moneyline, 100);
     } else {
@@ -260,7 +276,7 @@ function readOptimizerSettings_(sheet) {
       currentWeight: parseNumberOrDefault_(row[headers[h.weight]], 0),
       minWeight,
       maxWeight,
-      direction: parseNumberOrDefault_(row[headers[h.direction]], 1)
+      direction: parseDirection_(row[headers[h.direction]])
     });
   }
 
@@ -281,11 +297,14 @@ function readHistoryRaw_(sheet, features) {
     throw new Error("HISTORY must contain either a winner column or both final score columns. Found headers: " + headerInfo.foundHeaders.join(" | "));
   }
 
+  const featureColumns = resolveFeatureColumnsForSettings_(headerInfo.headers, features);
+  Logger.log("Optimizer mapped " + Object.keys(featureColumns).length + " feature columns out of " + features.length + " Settings rows.");
+
   return {
     headers: headerInfo.headers,
     indexes,
     rows: values.slice(headerInfo.rowIndex + 1),
-    featureColumns: resolveFeatureColumnsForSettings_(headerInfo.headers, features)
+    featureColumns
   };
 }
 
@@ -294,18 +313,101 @@ function resolveFeatureColumnsForSettings_(headers, features) {
   const result = {};
 
   features.forEach(feature => {
-    const awayIdx = resolveFeatureHeaderIndex_(headers, "Away", feature.name);
-    const homeIdx = resolveFeatureHeaderIndex_(headers, "Home", feature.name);
+    const pair = resolveFeaturePair_(headers, feature.name);
 
-    if (awayIdx !== undefined && homeIdx !== undefined) {
-      result[feature.name] = {
-        away: awayIdx,
-        home: homeIdx
-      };
+    if (pair) {
+      result[feature.name] = pair;
     }
   });
 
   return result;
+}
+
+
+function resolveFeaturePair_(headers, statName) {
+  const statCandidates = buildStatCandidates_(statName);
+
+  for (let i = 0; i < statCandidates.length; i++) {
+    const stat = statCandidates[i];
+
+    const awayCandidates = [
+      "MM_Away " + stat,
+      "Away " + stat,
+      "Away_" + stat,
+      "Away" + stat
+    ];
+
+    const homeCandidates = [
+      "MM_Home " + stat,
+      "Home " + stat,
+      "Home_" + stat,
+      "Home" + stat
+    ];
+
+    const awayIdx = firstExistingHeaderIndex_(headers, awayCandidates);
+    const homeIdx = firstExistingHeaderIndex_(headers, homeCandidates);
+
+    if (awayIdx !== undefined && homeIdx !== undefined) {
+      return {
+        away: awayIdx,
+        home: homeIdx
+      };
+    }
+  }
+
+  const splitPair = resolveSplitFeaturePair_(headers, statName);
+  if (splitPair) return splitPair;
+
+  return null;
+}
+
+
+function buildStatCandidates_(statName) {
+  const candidates = [statName];
+  const aliases = ITER_OPT.STAT_ALIASES[statName] || [];
+
+  aliases.forEach(alias => candidates.push(alias));
+
+  return candidates;
+}
+
+
+function resolveSplitFeaturePair_(headers, statName) {
+  const splitMap = {
+    "Home OPS": ["MM_Away Road OPS", "MM_Home Home OPS"],
+    "Road OPS": ["MM_Away Road OPS", "MM_Home Home OPS"],
+    "Home ERA": ["MM_Away Road ERA", "MM_Home Home ERA"],
+    "Road ERA": ["MM_Away Road ERA", "MM_Home Home ERA"],
+    "Home WHIP": ["MM_Away Road WHIP", "MM_Home Home WHIP"],
+    "Road WHIP": ["MM_Away Road WHIP", "MM_Home Home WHIP"],
+    "Starter Split ERA": ["MM_Away Road Starter ERA", "MM_Home Home Starter ERA"],
+    "Starter Split WHIP": ["MM_Away Road Starter WHIP", "MM_Home Home Starter WHIP"],
+    "Starter Split K/BB": ["MM_Away Road Starter K/BB", "MM_Home Home Starter K/BB"]
+  };
+
+  if (!splitMap[statName]) return null;
+
+  const awayIdx = getHeaderIndex_(headers, splitMap[statName][0]);
+  const homeIdx = getHeaderIndex_(headers, splitMap[statName][1]);
+
+  if (awayIdx !== undefined && homeIdx !== undefined) {
+    return {
+      away: awayIdx,
+      home: homeIdx
+    };
+  }
+
+  return null;
+}
+
+
+function firstExistingHeaderIndex_(headers, candidates) {
+  for (let i = 0; i < candidates.length; i++) {
+    const idx = getHeaderIndex_(headers, candidates[i]);
+    if (idx !== undefined) return idx;
+  }
+
+  return undefined;
 }
 
 
@@ -428,31 +530,6 @@ function buildWeightMap_(features, key) {
     map[feature.name] = Number(feature[key] || 0);
   });
   return map;
-}
-
-
-function resolveFeatureHeaderIndex_(headers, side, statName) {
-  const candidates = [
-    side + " " + statName,
-    side + "_" + statName,
-    side + statName,
-    side + " Team " + statName,
-    side + " " + statName + " Value"
-  ];
-
-  for (let i = 0; i < candidates.length; i++) {
-    const idx = getHeaderIndex_(headers, candidates[i]);
-    if (idx !== undefined) return idx;
-  }
-
-  const target = normalizeHeader_(side + statName);
-  const keys = Object.keys(headers);
-
-  for (let j = 0; j < keys.length; j++) {
-    if (normalizeHeader_(keys[j]) === target) return headers[keys[j]];
-  }
-
-  return undefined;
 }
 
 
@@ -619,6 +696,24 @@ function parseBool_(value) {
 }
 
 
+function parseDirection_(value) {
+  const normalized = cleanText_(value).toLowerCase();
+
+  if (["lower", "low", "less", "negative", "-1", "down"].indexOf(normalized) !== -1) {
+    return -1;
+  }
+
+  if (["higher", "high", "more", "positive", "+1", "1", "up"].indexOf(normalized) !== -1) {
+    return 1;
+  }
+
+  const numeric = Number(value);
+  if (isFinite(numeric) && numeric < 0) return -1;
+
+  return 1;
+}
+
+
 function parseNumberOrDefault_(value, fallback) {
   const n = Number(value);
   return isFinite(n) ? n : fallback;
@@ -627,4 +722,9 @@ function parseNumberOrDefault_(value, fallback) {
 
 function cleanText_(value) {
   return String(value || "").trim();
+}
+
+
+function sameTeam_(a, b) {
+  return normalizeHeader_(a) === normalizeHeader_(b);
 }
