@@ -1,11 +1,12 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.1.1
+ * ITERATIVE MODEL OPTIMIZER v0.1.2
  *
  * Safe optimizer:
- * - Does NOT overwrite Current Weight
+ * - Does NOT overwrite live Weight
  * - Writes Suggested Weight only
  * - Writes full results to OPTIMIZER_ITERATIVE
- * - Finds header rows dynamically instead of assuming row 1
+ * - Supports current Settings headers:
+ *   Stat, Category, Active, Weight, Direction, Suggested Weight
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -16,15 +17,25 @@ const ITER_OPT = {
   HISTORY_SHEET: "HISTORY",
   OUTPUT_SHEET: "OPTIMIZER_ITERATIVE",
 
+  DEFAULT_MIN_WEIGHT: 0,
+  DEFAULT_MAX_WEIGHT: 20,
+
+  MAX_STAGE1_FEATURES_FOR_COMBOS: 8,
+  MAX_PAIRS_TO_KEEP: 8,
+  MIN_GAMES: 50,
+  MIN_WIN_RATE: 0.52,
+  MIN_ROI_IMPROVEMENT: 0.005,
+
   HEADERS: {
-    feature: "Feature",
+    stat: "Stat",
+    category: "Category",
     active: "Active",
-    currentWeight: "Current Weight",
+    weight: "Weight",
+    direction: "Direction",
+    suggestedWeight: "Suggested Weight",
     minWeight: "Min Weight",
     maxWeight: "Max Weight",
-    optimize: "Optimize?",
-    suggestedWeight: "Suggested Weight",
-    direction: "Direction"
+    optimize: "Optimize?"
   },
 
   HISTORY_HEADERS: {
@@ -33,27 +44,19 @@ const ITER_OPT = {
     awayML: "Away Moneyline",
     homeML: "Home Moneyline",
     winner: "Winner"
-  },
-
-  MAX_STAGE1_FEATURES_FOR_COMBOS: 8,
-  MAX_PAIRS_TO_KEEP: 8,
-  MAX_TRIPLES_TO_KEEP: 5,
-  MIN_GAMES: 50,
-  MIN_WIN_RATE: 0.52,
-  MIN_ROI_IMPROVEMENT: 0.005
+  }
 };
 
 
 function runIterativeOptimizer() {
   const ss = SpreadsheetApp.getActive();
-
   const settingsSheet = ss.getSheetByName(ITER_OPT.SETTINGS_SHEET);
   const historySheet = ss.getSheetByName(ITER_OPT.HISTORY_SHEET);
 
   if (!settingsSheet) throw new Error("Missing Settings sheet.");
   if (!historySheet) throw new Error("Missing HISTORY sheet.");
 
-  ensureOptimizerSettingsColumns_(settingsSheet);
+  ensureSuggestedWeightColumn_(settingsSheet);
 
   const settings = readOptimizerSettings_(settingsSheet);
   const history = readHistory_(historySheet);
@@ -146,41 +149,6 @@ function runIterativeOptimizer() {
   }
 
   stage2.sort((a, b) => b.perf.roi - a.perf.roi);
-  const topPairs = stage2.slice(0, ITER_OPT.MAX_PAIRS_TO_KEEP);
-
-  const stage3 = [];
-
-  for (let pairIndex = 0; pairIndex < topPairs.length; pairIndex++) {
-    const pair = topPairs[pairIndex];
-
-    for (let singleIndex = 0; singleIndex < topSingles.length; singleIndex++) {
-      const single = topSingles[singleIndex];
-      const featureName = single.feature.name;
-
-      if (pair.label.indexOf(featureName) !== -1) continue;
-
-      const testWeights = Object.assign({}, pair.weights);
-      testWeights[featureName] = single.weight;
-
-      const perf = backtestWeights_(history, settings, testWeights);
-
-      stage3.push({
-        label: pair.label + " + " + featureName,
-        weights: testWeights,
-        perf
-      });
-
-      results.push(makeResultRow_(
-        "STAGE 3 - TRIPLE",
-        pair.label + ", " + featureName + " = " + single.weight,
-        testWeights,
-        perf,
-        baseline
-      ));
-    }
-  }
-
-  stage3.sort((a, b) => b.perf.roi - a.perf.roi);
 
   const candidates = stage1
     .map(item => ({
@@ -188,8 +156,7 @@ function runIterativeOptimizer() {
       weights: item.weights,
       perf: item.perf
     }))
-    .concat(stage2)
-    .concat(stage3);
+    .concat(stage2.slice(0, ITER_OPT.MAX_PAIRS_TO_KEEP));
 
   candidates.sort((a, b) => b.perf.roi - a.perf.roi);
 
@@ -209,7 +176,6 @@ function runIterativeOptimizer() {
   }
 
   writeOptimizerResults_(ss, results, settings.features);
-
   SpreadsheetApp.flush();
 }
 
@@ -317,18 +283,7 @@ function isBetterResult_(test, currentBest, baseline) {
 
 function readOptimizerSettings_(sheet) {
   const values = sheet.getDataRange().getValues();
-
-  const required = [
-    ITER_OPT.HEADERS.feature,
-    ITER_OPT.HEADERS.active,
-    ITER_OPT.HEADERS.currentWeight,
-    ITER_OPT.HEADERS.minWeight,
-    ITER_OPT.HEADERS.maxWeight,
-    ITER_OPT.HEADERS.optimize,
-    ITER_OPT.HEADERS.direction
-  ];
-
-  const headerInfo = findHeaderRow_(values, required, "Settings");
+  const headerInfo = findSettingsHeaderRow_(values);
   const headers = headerInfo.headers;
   const headerRowIndex = headerInfo.rowIndex;
 
@@ -336,17 +291,31 @@ function readOptimizerSettings_(sheet) {
 
   for (let rowIndex = headerRowIndex + 1; rowIndex < values.length; rowIndex++) {
     const row = values[rowIndex];
-    const name = row[headers[ITER_OPT.HEADERS.feature]];
+    const name = row[headers[ITER_OPT.HEADERS.stat]];
     if (!name) continue;
+
+    const active = parseBool_(row[headers[ITER_OPT.HEADERS.active]]);
+    const optimize = headers[ITER_OPT.HEADERS.optimize] === undefined
+      ? active
+      : parseBool_(row[headers[ITER_OPT.HEADERS.optimize]]);
+
+    const minWeight = headers[ITER_OPT.HEADERS.minWeight] === undefined
+      ? ITER_OPT.DEFAULT_MIN_WEIGHT
+      : Number(row[headers[ITER_OPT.HEADERS.minWeight]] || ITER_OPT.DEFAULT_MIN_WEIGHT);
+
+    const maxWeight = headers[ITER_OPT.HEADERS.maxWeight] === undefined
+      ? ITER_OPT.DEFAULT_MAX_WEIGHT
+      : Number(row[headers[ITER_OPT.HEADERS.maxWeight]] || ITER_OPT.DEFAULT_MAX_WEIGHT);
 
     features.push({
       rowNumber: rowIndex + 1,
       name: String(name).trim(),
-      active: parseBool_(row[headers[ITER_OPT.HEADERS.active]]),
-      optimize: parseBool_(row[headers[ITER_OPT.HEADERS.optimize]]),
-      currentWeight: Number(row[headers[ITER_OPT.HEADERS.currentWeight]] || 0),
-      minWeight: Number(row[headers[ITER_OPT.HEADERS.minWeight]] || 0),
-      maxWeight: Number(row[headers[ITER_OPT.HEADERS.maxWeight]] || 0),
+      category: headers[ITER_OPT.HEADERS.category] === undefined ? "" : String(row[headers[ITER_OPT.HEADERS.category]] || "").trim(),
+      active,
+      optimize,
+      currentWeight: Number(row[headers[ITER_OPT.HEADERS.weight]] || 0),
+      minWeight,
+      maxWeight,
       direction: Number(row[headers[ITER_OPT.HEADERS.direction]] || 1)
     });
   }
@@ -361,8 +330,7 @@ function readOptimizerSettings_(sheet) {
 
 function readHistory_(sheet) {
   const values = sheet.getDataRange().getValues();
-  const required = Object.values(ITER_OPT.HISTORY_HEADERS);
-  const headerInfo = findHeaderRow_(values, required, "HISTORY");
+  const headerInfo = findHistoryHeaderRow_(values);
 
   return {
     headers: headerInfo.headers,
@@ -372,44 +340,14 @@ function readHistory_(sheet) {
 }
 
 
-function ensureOptimizerSettingsColumns_(sheet) {
+function ensureSuggestedWeightColumn_(sheet) {
   const values = sheet.getDataRange().getValues();
-
-  const baseRequired = [
-    ITER_OPT.HEADERS.feature,
-    ITER_OPT.HEADERS.active,
-    ITER_OPT.HEADERS.currentWeight,
-    ITER_OPT.HEADERS.minWeight,
-    ITER_OPT.HEADERS.maxWeight,
-    ITER_OPT.HEADERS.optimize
-  ];
-
-  const headerInfo = findHeaderRow_(values, baseRequired, "Settings");
+  const headerInfo = findSettingsHeaderRow_(values);
   const headerRowNumber = headerInfo.rowIndex + 1;
-  let headers = headerInfo.headers;
+  const headers = headerInfo.headers;
 
-  const needed = [
-    ITER_OPT.HEADERS.suggestedWeight,
-    ITER_OPT.HEADERS.direction
-  ];
-
-  needed.forEach(header => {
-    if (headers[header] === undefined) {
-      sheet.getRange(headerRowNumber, sheet.getLastColumn() + 1).setValue(header);
-    }
-  });
-
-  const refreshed = sheet.getDataRange().getValues();
-  headers = mapHeaders_(refreshed[headerRowNumber - 1]);
-
-  const directionCol = headers[ITER_OPT.HEADERS.direction] + 1;
-
-  for (let row = headerRowNumber + 1; row <= sheet.getLastRow(); row++) {
-    const featureName = sheet.getRange(row, headers[ITER_OPT.HEADERS.feature] + 1).getValue();
-    if (!featureName) continue;
-
-    const cell = sheet.getRange(row, directionCol);
-    if (cell.getValue() === "") cell.setValue(1);
+  if (headers[ITER_OPT.HEADERS.suggestedWeight] === undefined) {
+    sheet.getRange(headerRowNumber, sheet.getLastColumn() + 1).setValue(ITER_OPT.HEADERS.suggestedWeight);
   }
 }
 
@@ -511,6 +449,31 @@ function makeResultRow_(stage, test, weights, perf, baseline) {
     decision,
     weights
   };
+}
+
+
+function findSettingsHeaderRow_(values) {
+  const required = [
+    ITER_OPT.HEADERS.stat,
+    ITER_OPT.HEADERS.active,
+    ITER_OPT.HEADERS.weight,
+    ITER_OPT.HEADERS.direction
+  ];
+
+  return findHeaderRow_(values, required, "Settings");
+}
+
+
+function findHistoryHeaderRow_(values) {
+  const required = [
+    ITER_OPT.HISTORY_HEADERS.awayTeam,
+    ITER_OPT.HISTORY_HEADERS.homeTeam,
+    ITER_OPT.HISTORY_HEADERS.awayML,
+    ITER_OPT.HISTORY_HEADERS.homeML,
+    ITER_OPT.HISTORY_HEADERS.winner
+  ];
+
+  return findHeaderRow_(values, required, "HISTORY");
 }
 
 
