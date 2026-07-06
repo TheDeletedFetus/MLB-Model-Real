@@ -1,5 +1,5 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.2.0
+ * ITERATIVE MODEL OPTIMIZER v0.2.1
  *
  * Purpose:
  * - Read Settings once
@@ -63,7 +63,7 @@ function runIterativeOptimizer() {
   ensureSuggestedWeightColumn_(settingsSheet);
 
   const settings = readOptimizerSettings_(settingsSheet);
-  const historyRaw = readHistoryRaw_(historySheet);
+  const historyRaw = readHistoryRaw_(historySheet, settings.features);
   const games = buildOptimizerGameCache_(historyRaw, settings.features);
 
   if (games.length < ITER_OPT.MIN_GAMES) {
@@ -88,8 +88,7 @@ function runIterativeOptimizer() {
         testWeights[feature.name] = weight;
 
         const perf = backtestCachedGames_(games, settings.features, testWeights);
-        const result = makeResultRow_("STAGE 1 TEST", feature.name + " = " + weight, testWeights, perf, baseline);
-        results.push(result);
+        results.push(makeResultRow_("STAGE 1 TEST", feature.name + " = " + weight, testWeights, perf, baseline));
 
         if (!best || isBetterResult_(perf, best.perf, baseline)) {
           best = {
@@ -273,53 +272,21 @@ function readOptimizerSettings_(sheet) {
 }
 
 
-function readHistoryRaw_(sheet) {
+function readHistoryRaw_(sheet, features) {
   const values = sheet.getDataRange().getValues();
   const headerInfo = findHistoryHeaderRow_(values);
-  const headers = headerInfo.headers;
   const indexes = headerInfo.indexes;
 
   if (indexes.winner === undefined && (indexes.awayFinal === undefined || indexes.homeFinal === undefined)) {
     throw new Error("HISTORY must contain either a winner column or both final score columns. Found headers: " + headerInfo.foundHeaders.join(" | "));
   }
 
-  const rows = values.slice(headerInfo.rowIndex + 1);
-
   return {
-    headers,
+    headers: headerInfo.headers,
     indexes,
-    rows,
-    featureColumns: buildFeatureColumnMap_(headers)
+    rows: values.slice(headerInfo.rowIndex + 1),
+    featureColumns: resolveFeatureColumnsForSettings_(headerInfo.headers, features)
   };
-}
-
-
-function buildFeatureColumnMap_(headers) {
-  const map = {};
-  const headerNames = Object.keys(headers);
-
-  headerNames.forEach(headerName => {
-    const normalized = normalizeHeader_(headerName);
-    const side = normalized.indexOf("away") === 0 ? "away" : normalized.indexOf("home") === 0 ? "home" : "";
-    if (!side) return;
-
-    const stripped = side === "away"
-      ? normalized.replace(/^away/, "")
-      : normalized.replace(/^home/, "");
-
-    headerNames.forEach(otherHeaderName => {
-      // no-op; this keeps this function simple and Apps Script compatible
-    });
-
-    map[headerName] = map[headerName] || {};
-  });
-
-  return {};
-}
-
-
-function addFeatureColumnLookups_(historyRaw, features) {
-  // Reserved for future staged optimization.
 }
 
 
