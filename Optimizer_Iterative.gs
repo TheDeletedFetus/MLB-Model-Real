@@ -1,5 +1,5 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.2.2
+ * ITERATIVE MODEL OPTIMIZER v0.2.3
  *
  * Purpose:
  * - Read Settings once
@@ -8,11 +8,12 @@
  * - Run Stage 1 individual stat tests in memory
  * - Write OPTIMIZER_ITERATIVE once
  * - Write Suggested Weight only
+ * - Write OPTIMIZER_DEBUG once
  *
  * Important HISTORY format note:
  * Current HISTORY stores pregame Model_Matrix fields with MM_ prefixes,
  * e.g. MM_Away Runs/Game, MM_Home Runs/Game, MM_Away ML, MM_Home ML.
- * This optimizer now explicitly supports that format.
+ * This optimizer explicitly supports that format.
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -22,6 +23,7 @@ const ITER_OPT = {
   SETTINGS_SHEET: "Settings",
   HISTORY_SHEET: "HISTORY",
   OUTPUT_SHEET: "OPTIMIZER_ITERATIVE",
+  DEBUG_SHEET: "OPTIMIZER_DEBUG",
 
   DEFAULT_MIN_WEIGHT: 0,
   DEFAULT_MAX_WEIGHT: 10,
@@ -140,6 +142,7 @@ function runIterativeOptimizer() {
   }
 
   writeOptimizerResults_(ss, results, settings.features);
+  writeOptimizerDebug_(ss, games, settings.features, baselineWeights, stage1Best[0]);
   SpreadsheetApp.flush();
 }
 
@@ -155,7 +158,7 @@ function buildOptimizerGameCache_(historyRaw, features) {
     const homeML = Number(row[historyRaw.indexes.homeML]);
 
     if (!awayTeam || !homeTeam || !winner) return;
-    if (!isFinite(awayML) || !isFinite(homeML)) return;
+    if (!isValidMoneyline_(awayML) || !isValidMoneyline_(homeML)) return;
 
     const featureValues = {};
     let usableFeatureCount = 0;
@@ -219,17 +222,25 @@ function backtestCachedGames_(games, features, weightsByFeature) {
     const pick = awayScore > homeScore ? game.awayTeam : game.homeTeam;
     const moneyline = pick === game.awayTeam ? game.awayML : game.homeML;
 
+    if (!isValidMoneyline_(moneyline)) return;
+
+    const payout = americanOddsProfit_(moneyline, 100);
+    if (!isFinite(payout)) return;
+
     gamesCount++;
     totalRisk += 100;
 
     if (sameTeam_(pick, game.winner)) {
       wins++;
-      profit += americanOddsProfit_(moneyline, 100);
+      profit += payout;
     } else {
       losses++;
       profit -= 100;
     }
   });
+
+  profit = finiteOrZero_(profit);
+  totalRisk = finiteOrZero_(totalRisk);
 
   return {
     games: gamesCount,
@@ -238,6 +249,96 @@ function backtestCachedGames_(games, features, weightsByFeature) {
     winRate: gamesCount ? wins / gamesCount : 0,
     profit,
     roi: totalRisk ? profit / totalRisk : 0
+  };
+}
+
+
+function writeOptimizerDebug_(ss, games, features, baselineWeights, topCandidate) {
+  let sheet = ss.getSheetByName(ITER_OPT.DEBUG_SHEET);
+  if (!sheet) sheet = ss.insertSheet(ITER_OPT.DEBUG_SHEET);
+  sheet.clearContents();
+
+  const output = [];
+  output.push(["Debug Item", "Value"]);
+  output.push(["Usable Games", games.length]);
+
+  if (!games.length) {
+    sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
+    return;
+  }
+
+  const game = games[0];
+  const baselineScore = calculateGameScore_(game, features, baselineWeights);
+  const topWeights = topCandidate ? topCandidate.weights : baselineWeights;
+  const topScore = calculateGameScore_(game, features, topWeights);
+
+  output.push(["Sample Game", game.awayTeam + " @ " + game.homeTeam]);
+  output.push(["Winner", game.winner]);
+  output.push(["Away ML", game.awayML]);
+  output.push(["Home ML", game.homeML]);
+  output.push(["Baseline Away Score", baselineScore.awayScore]);
+  output.push(["Baseline Home Score", baselineScore.homeScore]);
+  output.push(["Baseline Pick", baselineScore.pick]);
+  output.push(["Top Test", topCandidate ? topCandidate.feature.name + " = " + topCandidate.weight : "N/A"]);
+  output.push(["Top Away Score", topScore.awayScore]);
+  output.push(["Top Home Score", topScore.homeScore]);
+  output.push(["Top Pick", topScore.pick]);
+  output.push(["", ""]);
+  output.push(["Feature", "Away Value", "Home Value", "Baseline Weight", "Direction", "Baseline Away Contribution", "Baseline Home Contribution", "Top Weight", "Top Away Contribution", "Top Home Contribution"]);
+
+  features.forEach(feature => {
+    const values = game.featureValues[feature.name];
+    if (!values) return;
+
+    const baseWeight = Number(baselineWeights[feature.name] || 0);
+    const candidateWeight = Number(topWeights[feature.name] || 0);
+
+    output.push([
+      feature.name,
+      values.away,
+      values.home,
+      baseWeight,
+      feature.direction,
+      values.away * baseWeight * feature.direction,
+      values.home * baseWeight * feature.direction,
+      candidateWeight,
+      values.away * candidateWeight * feature.direction,
+      values.home * candidateWeight * feature.direction
+    ]);
+  });
+
+  const width = Math.max.apply(null, output.map(row => row.length));
+  const rectangular = output.map(row => {
+    const copy = row.slice();
+    while (copy.length < width) copy.push("");
+    return copy;
+  });
+
+  sheet.getRange(1, 1, rectangular.length, width).setValues(rectangular);
+  sheet.getRange(1, 1, 1, width).setFontWeight("bold");
+  sheet.autoResizeColumns(1, Math.min(width, 10));
+}
+
+
+function calculateGameScore_(game, features, weightsByFeature) {
+  let awayScore = 0;
+  let homeScore = 0;
+
+  features.forEach(feature => {
+    const weight = Number(weightsByFeature[feature.name] || 0);
+    if (weight === 0) return;
+
+    const values = game.featureValues[feature.name];
+    if (!values) return;
+
+    awayScore += values.away * weight * feature.direction;
+    homeScore += values.home * weight * feature.direction;
+  });
+
+  return {
+    awayScore,
+    homeScore,
+    pick: awayScore > homeScore ? game.awayTeam : homeScore > awayScore ? game.homeTeam : "Tie"
   };
 }
 
@@ -465,18 +566,18 @@ function writeOptimizerResults_(ss, results, features) {
     const row = [
       result.stage,
       result.test,
-      result.games,
-      result.wins,
-      result.losses,
-      result.winRate,
-      result.profit,
-      result.roi,
-      result.roiChange,
+      safeSheetValue_(result.games),
+      safeSheetValue_(result.wins),
+      safeSheetValue_(result.losses),
+      safeSheetValue_(result.winRate),
+      safeSheetValue_(result.profit),
+      safeSheetValue_(result.roi),
+      safeSheetValue_(result.roiChange),
       result.decision
     ];
 
     features.forEach(feature => {
-      row.push(result.weights[feature.name] || 0);
+      row.push(safeSheetValue_(result.weights[feature.name] || 0));
     });
 
     output.push(row);
@@ -496,7 +597,7 @@ function writeOptimizerResults_(ss, results, features) {
 
 
 function makeResultRow_(stage, test, weights, perf, baseline) {
-  const roiChange = perf.roi - baseline.roi;
+  const roiChange = finiteOrZero_(perf.roi) - finiteOrZero_(baseline.roi);
 
   let decision = "REJECT";
 
@@ -504,20 +605,20 @@ function makeResultRow_(stage, test, weights, perf, baseline) {
     decision = "CONTROL";
   } else if (passesAcceptanceRules_(perf, baseline)) {
     decision = "ACCEPT";
-  } else if (perf.profit > baseline.profit || perf.roi > baseline.roi) {
+  } else if (finiteOrZero_(perf.profit) > finiteOrZero_(baseline.profit) || finiteOrZero_(perf.roi) > finiteOrZero_(baseline.roi)) {
     decision = "WATCHLIST";
   }
 
   return {
     stage,
     test,
-    games: perf.games,
-    wins: perf.wins,
-    losses: perf.losses,
-    winRate: perf.winRate,
-    profit: perf.profit,
-    roi: perf.roi,
-    roiChange,
+    games: finiteOrZero_(perf.games),
+    wins: finiteOrZero_(perf.wins),
+    losses: finiteOrZero_(perf.losses),
+    winRate: finiteOrZero_(perf.winRate),
+    profit: finiteOrZero_(perf.profit),
+    roi: finiteOrZero_(perf.roi),
+    roiChange: finiteOrZero_(roiChange),
     decision,
     weights
   };
@@ -552,16 +653,20 @@ function resolveWinner_(row, indexes, awayTeam, homeTeam) {
 
 
 function americanOddsProfit_(odds, risk) {
-  if (odds > 0) return risk * (odds / 100);
-  return risk * (100 / Math.abs(odds));
+  const cleanOdds = Number(odds);
+  const cleanRisk = Number(risk);
+
+  if (!isValidMoneyline_(cleanOdds) || !isFinite(cleanRisk) || cleanRisk <= 0) return 0;
+  if (cleanOdds > 0) return cleanRisk * (cleanOdds / 100);
+  return cleanRisk * (100 / Math.abs(cleanOdds));
 }
 
 
 function passesAcceptanceRules_(perf, baseline) {
-  if (perf.games < ITER_OPT.MIN_GAMES) return false;
-  if (perf.winRate < ITER_OPT.MIN_WIN_RATE) return false;
-  if ((perf.roi - baseline.roi) < ITER_OPT.MIN_ROI_IMPROVEMENT) return false;
-  if (perf.profit <= baseline.profit) return false;
+  if (finiteOrZero_(perf.games) < ITER_OPT.MIN_GAMES) return false;
+  if (finiteOrZero_(perf.winRate) < ITER_OPT.MIN_WIN_RATE) return false;
+  if ((finiteOrZero_(perf.roi) - finiteOrZero_(baseline.roi)) < ITER_OPT.MIN_ROI_IMPROVEMENT) return false;
+  if (finiteOrZero_(perf.profit) <= finiteOrZero_(baseline.profit)) return false;
   return true;
 }
 
@@ -575,7 +680,7 @@ function isBetterResult_(test, currentBest, baseline) {
   if (testPass && !bestPass) return true;
   if (!testPass && bestPass) return false;
 
-  return test.roi > currentBest.roi;
+  return finiteOrZero_(test.roi) > finiteOrZero_(currentBest.roi);
 }
 
 
@@ -727,4 +832,22 @@ function cleanText_(value) {
 
 function sameTeam_(a, b) {
   return normalizeHeader_(a) === normalizeHeader_(b);
+}
+
+
+function isValidMoneyline_(value) {
+  const n = Number(value);
+  return isFinite(n) && n !== 0;
+}
+
+
+function finiteOrZero_(value) {
+  const n = Number(value);
+  return isFinite(n) ? n : 0;
+}
+
+
+function safeSheetValue_(value) {
+  if (typeof value === "number") return isFinite(value) ? value : 0;
+  return value === undefined || value === null ? "" : value;
 }
