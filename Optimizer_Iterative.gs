@@ -1,11 +1,16 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.1.4
+ * ITERATIVE MODEL OPTIMIZER v0.2.0
  *
- * Safe optimizer:
- * - Does NOT overwrite live Weight
- * - Writes Suggested Weight only
- * - Writes full results to OPTIMIZER_ITERATIVE
- * - Stage 1 only: tests each active stat individually
+ * Purpose:
+ * - Read Settings once
+ * - Read HISTORY once
+ * - Build an in-memory game cache once
+ * - Run Stage 1 individual stat tests in memory
+ * - Write OPTIMIZER_ITERATIVE once
+ * - Write Suggested Weight only
+ *
+ * This version intentionally does NOT run pair/triple tests.
+ * Pair testing should be added only after Stage 1 results match expectations.
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -23,7 +28,7 @@ const ITER_OPT = {
   MIN_WIN_RATE: 0.52,
   MIN_ROI_IMPROVEMENT: 0.005,
 
-  HEADERS: {
+  SETTINGS_HEADERS: {
     stat: "Stat",
     category: "Category",
     active: "Active",
@@ -58,29 +63,20 @@ function runIterativeOptimizer() {
   ensureSuggestedWeightColumn_(settingsSheet);
 
   const settings = readOptimizerSettings_(settingsSheet);
-  const history = readHistory_(historySheet);
+  const historyRaw = readHistoryRaw_(historySheet);
+  const games = buildOptimizerGameCache_(historyRaw, settings.features);
 
-  if (history.rows.length < ITER_OPT.MIN_GAMES) {
-    throw new Error("Not enough HISTORY rows for optimizer testing. Found " + history.rows.length + ". Minimum required: " + ITER_OPT.MIN_GAMES);
+  if (games.length < ITER_OPT.MIN_GAMES) {
+    throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES);
   }
 
-  const baselineWeights = {};
-  settings.features.forEach(feature => {
-    baselineWeights[feature.name] = feature.currentWeight;
-  });
+  const baselineWeights = buildWeightMap_(settings.features, "currentWeight");
+  const baseline = backtestCachedGames_(games, settings.features, baselineWeights);
 
-  const baseline = backtestWeights_(history, settings, baselineWeights);
   const results = [];
+  results.push(makeResultRow_("BASELINE", "Current live weights", baselineWeights, baseline, baseline));
 
-  results.push(makeResultRow_(
-    "BASELINE",
-    "Current live weights",
-    baselineWeights,
-    baseline,
-    baseline
-  ));
-
-  const stage1 = [];
+  const stage1Best = [];
 
   settings.features
     .filter(feature => feature.active && feature.optimize)
@@ -91,42 +87,30 @@ function runIterativeOptimizer() {
         const testWeights = Object.assign({}, baselineWeights);
         testWeights[feature.name] = weight;
 
-        const perf = backtestWeights_(history, settings, testWeights);
-
-        results.push(makeResultRow_(
-          "STAGE 1 TEST",
-          feature.name + " = " + weight,
-          testWeights,
-          perf,
-          baseline
-        ));
+        const perf = backtestCachedGames_(games, settings.features, testWeights);
+        const result = makeResultRow_("STAGE 1 TEST", feature.name + " = " + weight, testWeights, perf, baseline);
+        results.push(result);
 
         if (!best || isBetterResult_(perf, best.perf, baseline)) {
           best = {
             feature,
             weight,
-            perf,
-            weights: testWeights
+            weights: testWeights,
+            perf
           };
         }
       }
 
       if (best) {
-        stage1.push(best);
-        results.push(makeResultRow_(
-          "STAGE 1 BEST",
-          best.feature.name + " best = " + best.weight,
-          best.weights,
-          best.perf,
-          baseline
-        ));
+        stage1Best.push(best);
+        results.push(makeResultRow_("STAGE 1 BEST", best.feature.name + " best = " + best.weight, best.weights, best.perf, baseline));
       }
     });
 
-  stage1.sort((a, b) => b.perf.roi - a.perf.roi);
+  stage1Best.sort((a, b) => b.perf.roi - a.perf.roi);
 
-  const accepted = stage1.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
-  const finalCandidate = accepted || stage1[0];
+  const accepted = stage1Best.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
+  const finalCandidate = accepted || stage1Best[0];
 
   if (finalCandidate) {
     results.push(makeResultRow_(
@@ -145,54 +129,85 @@ function runIterativeOptimizer() {
 }
 
 
-function backtestWeights_(history, settings, weightsByFeature) {
-  let games = 0;
+function buildOptimizerGameCache_(historyRaw, features) {
+  const games = [];
+
+  historyRaw.rows.forEach(row => {
+    const awayTeam = cleanText_(row[historyRaw.indexes.awayTeam]);
+    const homeTeam = cleanText_(row[historyRaw.indexes.homeTeam]);
+    const winner = resolveWinner_(row, historyRaw.indexes, awayTeam, homeTeam);
+    const awayML = Number(row[historyRaw.indexes.awayML]);
+    const homeML = Number(row[historyRaw.indexes.homeML]);
+
+    if (!awayTeam || !homeTeam || !winner) return;
+    if (!isFinite(awayML) || !isFinite(homeML)) return;
+
+    const featureValues = {};
+    let usableFeatureCount = 0;
+
+    features.forEach(feature => {
+      const columns = historyRaw.featureColumns[feature.name];
+      if (!columns) return;
+
+      const awayVal = Number(row[columns.away]);
+      const homeVal = Number(row[columns.home]);
+
+      if (!isFinite(awayVal) || !isFinite(homeVal)) return;
+
+      featureValues[feature.name] = {
+        away: awayVal,
+        home: homeVal
+      };
+      usableFeatureCount++;
+    });
+
+    if (usableFeatureCount === 0) return;
+
+    games.push({
+      awayTeam,
+      homeTeam,
+      winner: cleanText_(winner),
+      awayML,
+      homeML,
+      featureValues
+    });
+  });
+
+  return games;
+}
+
+
+function backtestCachedGames_(games, features, weightsByFeature) {
+  let gamesCount = 0;
   let wins = 0;
   let losses = 0;
   let profit = 0;
   let totalRisk = 0;
 
-  history.rows.forEach(row => {
-    const awayTeam = row[history.indexes.awayTeam];
-    const homeTeam = row[history.indexes.homeTeam];
-    const winner = resolveWinner_(row, history.indexes, awayTeam, homeTeam);
-
-    if (!awayTeam || !homeTeam || !winner) return;
-
+  games.forEach(game => {
     let awayScore = 0;
     let homeScore = 0;
 
-    settings.features.forEach(feature => {
+    features.forEach(feature => {
       const weight = Number(weightsByFeature[feature.name] || 0);
       if (weight === 0) return;
 
-      const awayIdx = resolveFeatureHeaderIndex_(history.headers, "Away", feature.name);
-      const homeIdx = resolveFeatureHeaderIndex_(history.headers, "Home", feature.name);
+      const values = game.featureValues[feature.name];
+      if (!values) return;
 
-      if (awayIdx === undefined || homeIdx === undefined) return;
-
-      const awayVal = Number(row[awayIdx]);
-      const homeVal = Number(row[homeIdx]);
-
-      if (!isFinite(awayVal) || !isFinite(homeVal)) return;
-
-      awayScore += awayVal * weight * feature.direction;
-      homeScore += homeVal * weight * feature.direction;
+      awayScore += values.away * weight * feature.direction;
+      homeScore += values.home * weight * feature.direction;
     });
 
     if (awayScore === homeScore) return;
 
-    const pick = awayScore > homeScore ? awayTeam : homeTeam;
-    const pickedAway = pick === awayTeam;
-    const moneylineIndex = pickedAway ? history.indexes.awayML : history.indexes.homeML;
-    const moneyline = Number(row[moneylineIndex]);
+    const pick = awayScore > homeScore ? game.awayTeam : game.homeTeam;
+    const moneyline = pick === game.awayTeam ? game.awayML : game.homeML;
 
-    if (!isFinite(moneyline)) return;
-
-    games++;
+    gamesCount++;
     totalRisk += 100;
 
-    if (String(pick).trim() === String(winner).trim()) {
+    if (cleanText_(pick) === cleanText_(game.winner)) {
       wins++;
       profit += americanOddsProfit_(moneyline, 100);
     } else {
@@ -202,77 +217,13 @@ function backtestWeights_(history, settings, weightsByFeature) {
   });
 
   return {
-    games,
+    games: gamesCount,
     wins,
     losses,
-    winRate: games ? wins / games : 0,
+    winRate: gamesCount ? wins / gamesCount : 0,
     profit,
     roi: totalRisk ? profit / totalRisk : 0
   };
-}
-
-
-function resolveFeatureHeaderIndex_(headers, side, statName) {
-  const candidates = [
-    side + " " + statName,
-    side + "_" + statName,
-    side + statName,
-    side + " Team " + statName,
-    side + " " + statName + " Value"
-  ];
-
-  for (let i = 0; i < candidates.length; i++) {
-    const idx = getHeaderIndex_(headers, candidates[i]);
-    if (idx !== undefined) return idx;
-  }
-
-  return undefined;
-}
-
-
-function resolveWinner_(row, indexes, awayTeam, homeTeam) {
-  if (indexes.winner !== undefined) {
-    return row[indexes.winner];
-  }
-
-  if (indexes.awayFinal !== undefined && indexes.homeFinal !== undefined) {
-    const awayFinal = Number(row[indexes.awayFinal]);
-    const homeFinal = Number(row[indexes.homeFinal]);
-
-    if (isFinite(awayFinal) && isFinite(homeFinal) && awayFinal !== homeFinal) {
-      return awayFinal > homeFinal ? awayTeam : homeTeam;
-    }
-  }
-
-  return "";
-}
-
-
-function americanOddsProfit_(odds, risk) {
-  if (odds > 0) return risk * (odds / 100);
-  return risk * (100 / Math.abs(odds));
-}
-
-
-function passesAcceptanceRules_(perf, baseline) {
-  if (perf.games < ITER_OPT.MIN_GAMES) return false;
-  if (perf.winRate < ITER_OPT.MIN_WIN_RATE) return false;
-  if ((perf.roi - baseline.roi) < ITER_OPT.MIN_ROI_IMPROVEMENT) return false;
-  if (perf.profit <= baseline.profit) return false;
-  return true;
-}
-
-
-function isBetterResult_(test, currentBest, baseline) {
-  if (!currentBest) return true;
-
-  const testPass = passesAcceptanceRules_(test, baseline);
-  const bestPass = passesAcceptanceRules_(currentBest, baseline);
-
-  if (testPass && !bestPass) return true;
-  if (!testPass && bestPass) return false;
-
-  return test.roi > currentBest.roi;
 }
 
 
@@ -281,37 +232,36 @@ function readOptimizerSettings_(sheet) {
   const headerInfo = findSettingsHeaderRow_(values);
   const headers = headerInfo.headers;
   const headerRowIndex = headerInfo.rowIndex;
+  const h = ITER_OPT.SETTINGS_HEADERS;
 
   const features = [];
 
   for (let rowIndex = headerRowIndex + 1; rowIndex < values.length; rowIndex++) {
     const row = values[rowIndex];
-    const name = row[headers[ITER_OPT.HEADERS.stat]];
+    const name = cleanText_(row[headers[h.stat]]);
     if (!name) continue;
 
-    const active = parseBool_(row[headers[ITER_OPT.HEADERS.active]]);
-    const optimize = headers[ITER_OPT.HEADERS.optimize] === undefined
-      ? active
-      : parseBool_(row[headers[ITER_OPT.HEADERS.optimize]]);
+    const active = parseBool_(row[headers[h.active]]);
+    const optimize = headers[h.optimize] === undefined ? active : parseBool_(row[headers[h.optimize]]);
 
-    const minWeight = headers[ITER_OPT.HEADERS.minWeight] === undefined
+    const minWeight = headers[h.minWeight] === undefined
       ? ITER_OPT.DEFAULT_MIN_WEIGHT
-      : Number(row[headers[ITER_OPT.HEADERS.minWeight]] || ITER_OPT.DEFAULT_MIN_WEIGHT);
+      : parseNumberOrDefault_(row[headers[h.minWeight]], ITER_OPT.DEFAULT_MIN_WEIGHT);
 
-    const maxWeight = headers[ITER_OPT.HEADERS.maxWeight] === undefined
+    const maxWeight = headers[h.maxWeight] === undefined
       ? ITER_OPT.DEFAULT_MAX_WEIGHT
-      : Number(row[headers[ITER_OPT.HEADERS.maxWeight]] || ITER_OPT.DEFAULT_MAX_WEIGHT);
+      : parseNumberOrDefault_(row[headers[h.maxWeight]], ITER_OPT.DEFAULT_MAX_WEIGHT);
 
     features.push({
       rowNumber: rowIndex + 1,
-      name: String(name).trim(),
-      category: headers[ITER_OPT.HEADERS.category] === undefined ? "" : String(row[headers[ITER_OPT.HEADERS.category]] || "").trim(),
+      name,
+      category: headers[h.category] === undefined ? "" : cleanText_(row[headers[h.category]]),
       active,
       optimize,
-      currentWeight: Number(row[headers[ITER_OPT.HEADERS.weight]] || 0),
+      currentWeight: parseNumberOrDefault_(row[headers[h.weight]], 0),
       minWeight,
       maxWeight,
-      direction: Number(row[headers[ITER_OPT.HEADERS.direction]] || 1)
+      direction: parseNumberOrDefault_(row[headers[h.direction]], 1)
     });
   }
 
@@ -323,21 +273,72 @@ function readOptimizerSettings_(sheet) {
 }
 
 
-function readHistory_(sheet) {
+function readHistoryRaw_(sheet) {
   const values = sheet.getDataRange().getValues();
   const headerInfo = findHistoryHeaderRow_(values);
+  const headers = headerInfo.headers;
   const indexes = headerInfo.indexes;
 
   if (indexes.winner === undefined && (indexes.awayFinal === undefined || indexes.homeFinal === undefined)) {
     throw new Error("HISTORY must contain either a winner column or both final score columns. Found headers: " + headerInfo.foundHeaders.join(" | "));
   }
 
+  const rows = values.slice(headerInfo.rowIndex + 1);
+
   return {
-    headers: headerInfo.headers,
+    headers,
     indexes,
-    headerRowNumber: headerInfo.rowIndex + 1,
-    rows: values.slice(headerInfo.rowIndex + 1)
+    rows,
+    featureColumns: buildFeatureColumnMap_(headers)
   };
+}
+
+
+function buildFeatureColumnMap_(headers) {
+  const map = {};
+  const headerNames = Object.keys(headers);
+
+  headerNames.forEach(headerName => {
+    const normalized = normalizeHeader_(headerName);
+    const side = normalized.indexOf("away") === 0 ? "away" : normalized.indexOf("home") === 0 ? "home" : "";
+    if (!side) return;
+
+    const stripped = side === "away"
+      ? normalized.replace(/^away/, "")
+      : normalized.replace(/^home/, "");
+
+    headerNames.forEach(otherHeaderName => {
+      // no-op; this keeps this function simple and Apps Script compatible
+    });
+
+    map[headerName] = map[headerName] || {};
+  });
+
+  return {};
+}
+
+
+function addFeatureColumnLookups_(historyRaw, features) {
+  // Reserved for future staged optimization.
+}
+
+
+function resolveFeatureColumnsForSettings_(headers, features) {
+  const result = {};
+
+  features.forEach(feature => {
+    const awayIdx = resolveFeatureHeaderIndex_(headers, "Away", feature.name);
+    const homeIdx = resolveFeatureHeaderIndex_(headers, "Home", feature.name);
+
+    if (awayIdx !== undefined && homeIdx !== undefined) {
+      result[feature.name] = {
+        away: awayIdx,
+        home: homeIdx
+      };
+    }
+  });
+
+  return result;
 }
 
 
@@ -346,15 +347,16 @@ function ensureSuggestedWeightColumn_(sheet) {
   const headerInfo = findSettingsHeaderRow_(values);
   const headerRowNumber = headerInfo.rowIndex + 1;
   const headers = headerInfo.headers;
+  const suggestedHeader = ITER_OPT.SETTINGS_HEADERS.suggestedWeight;
 
-  if (headers[ITER_OPT.HEADERS.suggestedWeight] === undefined) {
-    sheet.getRange(headerRowNumber, sheet.getLastColumn() + 1).setValue(ITER_OPT.HEADERS.suggestedWeight);
+  if (headers[suggestedHeader] === undefined) {
+    sheet.getRange(headerRowNumber, sheet.getLastColumn() + 1).setValue(suggestedHeader);
   }
 }
 
 
 function writeSuggestedWeights_(sheet, settings, weightsByFeature, accepted) {
-  const suggestedCol = settings.headers[ITER_OPT.HEADERS.suggestedWeight] + 1;
+  const suggestedCol = settings.headers[ITER_OPT.SETTINGS_HEADERS.suggestedWeight] + 1;
 
   settings.features.forEach(feature => {
     const suggested = weightsByFeature[feature.name];
@@ -453,15 +455,89 @@ function makeResultRow_(stage, test, weights, perf, baseline) {
 }
 
 
-function findSettingsHeaderRow_(values) {
-  const required = [
-    ITER_OPT.HEADERS.stat,
-    ITER_OPT.HEADERS.active,
-    ITER_OPT.HEADERS.weight,
-    ITER_OPT.HEADERS.direction
+function buildWeightMap_(features, key) {
+  const map = {};
+  features.forEach(feature => {
+    map[feature.name] = Number(feature[key] || 0);
+  });
+  return map;
+}
+
+
+function resolveFeatureHeaderIndex_(headers, side, statName) {
+  const candidates = [
+    side + " " + statName,
+    side + "_" + statName,
+    side + statName,
+    side + " Team " + statName,
+    side + " " + statName + " Value"
   ];
 
-  return findHeaderRow_(values, required, "Settings");
+  for (let i = 0; i < candidates.length; i++) {
+    const idx = getHeaderIndex_(headers, candidates[i]);
+    if (idx !== undefined) return idx;
+  }
+
+  const target = normalizeHeader_(side + statName);
+  const keys = Object.keys(headers);
+
+  for (let j = 0; j < keys.length; j++) {
+    if (normalizeHeader_(keys[j]) === target) return headers[keys[j]];
+  }
+
+  return undefined;
+}
+
+
+function resolveWinner_(row, indexes, awayTeam, homeTeam) {
+  if (indexes.winner !== undefined) {
+    return cleanText_(row[indexes.winner]);
+  }
+
+  if (indexes.awayFinal !== undefined && indexes.homeFinal !== undefined) {
+    const awayFinal = Number(row[indexes.awayFinal]);
+    const homeFinal = Number(row[indexes.homeFinal]);
+
+    if (isFinite(awayFinal) && isFinite(homeFinal) && awayFinal !== homeFinal) {
+      return awayFinal > homeFinal ? awayTeam : homeTeam;
+    }
+  }
+
+  return "";
+}
+
+
+function americanOddsProfit_(odds, risk) {
+  if (odds > 0) return risk * (odds / 100);
+  return risk * (100 / Math.abs(odds));
+}
+
+
+function passesAcceptanceRules_(perf, baseline) {
+  if (perf.games < ITER_OPT.MIN_GAMES) return false;
+  if (perf.winRate < ITER_OPT.MIN_WIN_RATE) return false;
+  if ((perf.roi - baseline.roi) < ITER_OPT.MIN_ROI_IMPROVEMENT) return false;
+  if (perf.profit <= baseline.profit) return false;
+  return true;
+}
+
+
+function isBetterResult_(test, currentBest, baseline) {
+  if (!currentBest) return true;
+
+  const testPass = passesAcceptanceRules_(test, baseline);
+  const bestPass = passesAcceptanceRules_(currentBest, baseline);
+
+  if (testPass && !bestPass) return true;
+  if (!testPass && bestPass) return false;
+
+  return test.roi > currentBest.roi;
+}
+
+
+function findSettingsHeaderRow_(values) {
+  const h = ITER_OPT.SETTINGS_HEADERS;
+  return findHeaderRow_(values, [h.stat, h.active, h.weight, h.direction], "Settings");
 }
 
 
@@ -573,4 +649,15 @@ function parseBool_(value) {
   if (value === true) return true;
   const normalized = String(value).trim().toUpperCase();
   return normalized === "TRUE" || normalized === "YES" || normalized === "1";
+}
+
+
+function parseNumberOrDefault_(value, fallback) {
+  const n = Number(value);
+  return isFinite(n) ? n : fallback;
+}
+
+
+function cleanText_(value) {
+  return String(value || "").trim();
 }
