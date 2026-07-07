@@ -1,18 +1,21 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.3.0
+ * ITERATIVE MODEL OPTIMIZER v0.4.0
  *
  * Purpose:
- * - Read Settings once
- * - Read HISTORY once
- * - Build an in-memory game cache once
- * - Run Stage 1 individual stat tests in memory
- * - Write OPTIMIZER_ITERATIVE once
+ * - Backtest current weights against HISTORY
+ * - Run Stage 1 individual stat tests
+ * - Write OPTIMIZER_ITERATIVE
  * - Write Suggested Weight only
- * - Write OPTIMIZER_DEBUG once
+ * - Write OPTIMIZER_DEBUG
  *
  * Scoring:
- * Uses sharedScoreGameFromEdges_() from Shared_Scoring.gs.
- * HISTORY uses MM_ edge snapshot columns, e.g. MM_Run Differential Edge.
+ * Uses production scoring helpers from Scoring.js:
+ * - calculateEdgeStats()
+ * - scoreModelRowWithSettings()
+ *
+ * HISTORY stores Model_Matrix snapshot columns with MM_ prefixes.
+ * This optimizer strips the MM_ prefix in-memory so Scoring.js can use
+ * normal Model_Matrix-style headers like "Run Differential Edge".
  *
  * Run manually:
  *   runIterativeOptimizer()
@@ -44,8 +47,8 @@ const ITER_OPT = {
   },
 
   HISTORY_ALIASES: {
-    awayTeam: ["Away Team", "MM_Away Team", "Away", "AwayTeam", "Visitor", "Visitor Team", "Road Team"],
-    homeTeam: ["Home Team", "MM_Home Team", "Home", "HomeTeam"],
+    awayTeam: ["MM_Away Team", "Away Team", "Away", "AwayTeam", "Visitor", "Visitor Team", "Road Team"],
+    homeTeam: ["MM_Home Team", "Home Team", "Home", "HomeTeam"],
     awayML: ["MM_Away ML", "Pregame Away ML", "Latest Away ML", "Away ML", "Away Moneyline", "Away Odds", "Away Money Line", "Away Line"],
     homeML: ["MM_Home ML", "Pregame Home ML", "Latest Home ML", "Home ML", "Home Moneyline", "Home Odds", "Home Money Line", "Home Line"],
     winner: ["Winner", "Game Winner", "Actual Winner", "Winning Team", "Final Winner"],
@@ -65,23 +68,22 @@ function runIterativeOptimizer() {
 
   ensureSuggestedWeightColumn_(settingsSheet);
 
-  const settings = readOptimizerSettings_(settingsSheet);
-  const historyRaw = readHistoryRaw_(historySheet, settings.features);
-  const games = buildOptimizerGameCache_(historyRaw);
+  const optimizerSettings = readOptimizerSettings_(settingsSheet);
+  const history = readOptimizerHistory_(historySheet);
 
-  if (games.length < ITER_OPT.MIN_GAMES) {
-    throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES + ". Check odds availability and MM_ edge mapping.");
+  if (history.games.length < ITER_OPT.MIN_GAMES) {
+    throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + history.games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES + ".");
   }
 
-  const baselineWeights = buildWeightMap_(settings.features, "currentWeight");
-  const baseline = backtestCachedGames_(games, settings.features, baselineWeights, historyRaw.edgeColumnMap);
+  const baselineWeights = buildWeightMap_(optimizerSettings.features, "currentWeight");
+  const baseline = backtestWithProductionScoring_(history, optimizerSettings.features, baselineWeights);
 
   const results = [];
   results.push(makeResultRow_("BASELINE", "Current live weights", baselineWeights, baseline, baseline));
 
   const stage1Best = [];
 
-  settings.features
+  optimizerSettings.features
     .filter(feature => feature.active && feature.optimize)
     .forEach(feature => {
       let best = null;
@@ -90,7 +92,7 @@ function runIterativeOptimizer() {
         const testWeights = Object.assign({}, baselineWeights);
         testWeights[feature.name] = weight;
 
-        const perf = backtestCachedGames_(games, settings.features, testWeights, historyRaw.edgeColumnMap);
+        const perf = backtestWithProductionScoring_(history, optimizerSettings.features, testWeights);
         results.push(makeResultRow_("STAGE 1 TEST", feature.name + " = " + weight, testWeights, perf, baseline));
 
         if (!best || isBetterResult_(perf, best.perf, baseline)) {
@@ -109,7 +111,7 @@ function runIterativeOptimizer() {
       }
     });
 
-  stage1Best.sort((a, b) => b.perf.roi - a.perf.roi);
+  stage1Best.sort((a, b) => finiteOrZero_(b.perf.roi) - finiteOrZero_(a.perf.roi));
 
   const accepted = stage1Best.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
   const finalCandidate = accepted || stage1Best[0];
@@ -123,60 +125,34 @@ function runIterativeOptimizer() {
       baseline
     ));
 
-    writeSuggestedWeights_(settingsSheet, settings, finalCandidate.weights, Boolean(accepted));
+    writeSuggestedWeights_(settingsSheet, optimizerSettings, finalCandidate.weights, Boolean(accepted));
   }
 
-  writeOptimizerResults_(ss, results, settings.features);
-  writeOptimizerDebug_(ss, games, settings.features, baselineWeights, stage1Best[0], historyRaw.edgeColumnMap);
+  writeOptimizerResults_(ss, results, optimizerSettings.features);
+  writeOptimizerDebug_(ss, history, optimizerSettings.features, baselineWeights, stage1Best[0]);
   SpreadsheetApp.flush();
 }
 
 
-function buildOptimizerGameCache_(historyRaw) {
-  const games = [];
+function backtestWithProductionScoring_(history, features, weightsByFeature) {
+  const scoringSettings = buildProductionSettingsFromWeights_(features, weightsByFeature);
+  const edgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, scoringSettings);
 
-  historyRaw.rows.forEach(row => {
-    const awayTeam = cleanText_(row[historyRaw.indexes.awayTeam]);
-    const homeTeam = cleanText_(row[historyRaw.indexes.homeTeam]);
-    const winner = resolveWinner_(row, historyRaw.indexes, awayTeam, homeTeam);
-    const awayML = Number(row[historyRaw.indexes.awayML]);
-    const homeML = Number(row[historyRaw.indexes.homeML]);
-
-    if (!awayTeam || !homeTeam || !winner) return;
-    if (!isValidMoneyline_(awayML) || !isValidMoneyline_(homeML)) return;
-
-    games.push({
-      row,
-      awayTeam,
-      homeTeam,
-      winner: cleanText_(winner),
-      awayML,
-      homeML
-    });
-  });
-
-  return games;
-}
-
-
-function backtestCachedGames_(games, features, weightsByFeature, edgeColumnMap) {
   let gamesCount = 0;
   let wins = 0;
   let losses = 0;
   let profit = 0;
   let totalRisk = 0;
 
-  games.forEach(game => {
-    const score = sharedScoreGameFromEdges_(
+  history.games.forEach(game => {
+    const score = scoreModelRowWithSettings(
       game.row,
-      edgeColumnMap,
-      features,
-      weightsByFeature,
-      game.awayTeam,
-      game.homeTeam
+      history.scoringHeadersArray,
+      scoringSettings,
+      edgeStats
     );
 
-    if (!score.hasScore || score.pick === "Tie") return;
+    if (!score || score.pick === "Coin Flip") return;
 
     const moneyline = sameTeam_(score.pick, game.awayTeam) ? game.awayML : game.homeML;
     if (!isValidMoneyline_(moneyline)) return;
@@ -210,26 +186,101 @@ function backtestCachedGames_(games, features, weightsByFeature, edgeColumnMap) 
 }
 
 
-function writeOptimizerDebug_(ss, games, features, baselineWeights, topCandidate, edgeColumnMap) {
+function buildProductionSettingsFromWeights_(features, weightsByFeature) {
+  const settings = [];
+
+  features.forEach(feature => {
+    if (!feature.active) return;
+
+    const weight = Number(weightsByFeature[feature.name] || 0);
+    if (!isFinite(weight) || weight <= 0) return;
+
+    settings.push({
+      stat: feature.name,
+      weight
+    });
+  });
+
+  return settings;
+}
+
+
+function readOptimizerHistory_(sheet) {
+  const values = sheet.getDataRange().getValues();
+  const headerInfo = findHistoryHeaderRow_(values);
+  const originalHeadersArray = values[headerInfo.rowIndex];
+  const scoringHeadersArray = buildScoringHeadersFromHistoryHeaders_(originalHeadersArray);
+  const rows = values.slice(headerInfo.rowIndex + 1);
+
+  const indexes = headerInfo.indexes;
+  const games = [];
+
+  rows.forEach(row => {
+    const awayTeam = cleanText_(row[indexes.awayTeam]);
+    const homeTeam = cleanText_(row[indexes.homeTeam]);
+    const winner = resolveWinner_(row, indexes, awayTeam, homeTeam);
+    const awayML = Number(row[indexes.awayML]);
+    const homeML = Number(row[indexes.homeML]);
+
+    if (!awayTeam || !homeTeam || !winner) return;
+    if (!isValidMoneyline_(awayML) || !isValidMoneyline_(homeML)) return;
+
+    games.push({
+      row,
+      awayTeam,
+      homeTeam,
+      winner: cleanText_(winner),
+      awayML,
+      homeML
+    });
+  });
+
+  return {
+    originalHeadersArray,
+    scoringHeadersArray,
+    rows,
+    indexes,
+    games
+  };
+}
+
+
+function buildScoringHeadersFromHistoryHeaders_(headers) {
+  return headers.map(header => {
+    const text = String(header || "").trim();
+    if (text.indexOf("MM_") === 0) {
+      return text.substring(3);
+    }
+    return text;
+  });
+}
+
+
+function writeOptimizerDebug_(ss, history, features, baselineWeights, topCandidate) {
   let sheet = ss.getSheetByName(ITER_OPT.DEBUG_SHEET);
   if (!sheet) sheet = ss.insertSheet(ITER_OPT.DEBUG_SHEET);
   sheet.clearContents();
 
   const output = [];
   output.push(["Debug Item", "Value"]);
-  output.push(["Usable Games", games.length]);
-  output.push(["Mapped Edge Columns", Object.keys(edgeColumnMap).length]);
-  output.push(["Scoring Scale", SHARED_SCORING.SCORE_SCALE]);
+  output.push(["Usable Games", history.games.length]);
 
-  if (!games.length) {
+  const baselineSettings = buildProductionSettingsFromWeights_(features, baselineWeights);
+  output.push(["Baseline Active Weighted Features", baselineSettings.length]);
+
+  if (!history.games.length) {
     sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
     return;
   }
 
-  const game = games[0];
-  const baselineScore = sharedScoreGameFromEdges_(game.row, edgeColumnMap, features, baselineWeights, game.awayTeam, game.homeTeam);
+  const game = history.games[0];
+  const baselineEdgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, baselineSettings);
+  const baselineScore = scoreModelRowWithSettings(game.row, history.scoringHeadersArray, baselineSettings, baselineEdgeStats);
+
   const topWeights = topCandidate ? topCandidate.weights : baselineWeights;
-  const topScore = sharedScoreGameFromEdges_(game.row, edgeColumnMap, features, topWeights, game.awayTeam, game.homeTeam);
+  const topSettings = buildProductionSettingsFromWeights_(features, topWeights);
+  const topEdgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, topSettings);
+  const topScore = scoreModelRowWithSettings(game.row, history.scoringHeadersArray, topSettings, topEdgeStats);
 
   output.push(["Sample Game", game.awayTeam + " @ " + game.homeTeam]);
   output.push(["Winner", game.winner]);
@@ -243,29 +294,17 @@ function writeOptimizerDebug_(ss, games, features, baselineWeights, topCandidate
   output.push(["Top Home Score", topScore.homeScore]);
   output.push(["Top Pick", topScore.pick]);
   output.push(["", ""]);
-  output.push(["Feature", "Edge", "Baseline Weight", "Baseline Raw Contribution", "Baseline Scaled Contribution", "Top Weight", "Top Raw Contribution", "Top Scaled Contribution"]);
+  output.push(["Feature", "Weight", "Raw Edge", "Mean", "StdDev", "Z-Score", "Contribution"]);
 
-  const baselineContrib = sharedContributionRowsFromEdges_(game.row, edgeColumnMap, features, baselineWeights);
-  const topContrib = sharedContributionRowsFromEdges_(game.row, edgeColumnMap, features, topWeights);
-  const topByFeature = {};
-  topContrib.forEach(item => topByFeature[item.feature] = item);
-
-  baselineContrib.forEach(item => {
-    const top = topByFeature[item.feature] || {
-      weight: 0,
-      rawContribution: 0,
-      scaledContribution: 0
-    };
-
+  baselineScore.contributions.forEach(item => {
     output.push([
-      item.feature,
-      item.edge,
+      item.stat,
       item.weight,
-      item.rawContribution,
-      item.scaledContribution,
-      top.weight,
-      top.rawContribution,
-      top.scaledContribution
+      item.rawEdge,
+      item.mean,
+      item.stdDev,
+      item.zScore,
+      item.contribution
     ]);
   });
 
@@ -315,8 +354,7 @@ function readOptimizerSettings_(sheet) {
       optimize,
       currentWeight: parseNumberOrDefault_(row[headers[h.weight]], 0),
       minWeight,
-      maxWeight,
-      direction: parseDirection_(row[headers[h.direction]])
+      maxWeight
     });
   }
 
@@ -324,27 +362,6 @@ function readOptimizerSettings_(sheet) {
     headers,
     headerRowNumber: headerRowIndex + 1,
     features
-  };
-}
-
-
-function readHistoryRaw_(sheet, features) {
-  const values = sheet.getDataRange().getValues();
-  const headerInfo = findHistoryHeaderRow_(values);
-  const indexes = headerInfo.indexes;
-
-  if (indexes.winner === undefined && (indexes.awayFinal === undefined || indexes.homeFinal === undefined)) {
-    throw new Error("HISTORY must contain either a winner column or both final score columns. Found headers: " + headerInfo.foundHeaders.join(" | "));
-  }
-
-  const edgeColumnMap = sharedBuildEdgeColumnMap_(headerInfo.headers, features, "MM_");
-  Logger.log("Optimizer mapped " + Object.keys(edgeColumnMap).length + " MM_ edge columns out of " + features.length + " Settings rows.");
-
-  return {
-    headers: headerInfo.headers,
-    indexes,
-    rows: values.slice(headerInfo.rowIndex + 1),
-    edgeColumnMap
   };
 }
 
@@ -635,24 +652,6 @@ function parseBool_(value) {
   if (value === true) return true;
   const normalized = String(value).trim().toUpperCase();
   return normalized === "TRUE" || normalized === "YES" || normalized === "1";
-}
-
-
-function parseDirection_(value) {
-  const normalized = cleanText_(value).toLowerCase();
-
-  if (["lower", "low", "less", "negative", "-1", "down"].indexOf(normalized) !== -1) {
-    return -1;
-  }
-
-  if (["higher", "high", "more", "positive", "+1", "1", "up"].indexOf(normalized) !== -1) {
-    return 1;
-  }
-
-  const numeric = Number(value);
-  if (isFinite(numeric) && numeric < 0) return -1;
-
-  return 1;
 }
 
 
