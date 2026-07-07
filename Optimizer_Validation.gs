@@ -1,8 +1,11 @@
 /***************************************
- * OPTIMIZER VALIDATION v0.1.0
+ * OPTIMIZER VALIDATION v0.2.0
  *
  * Purpose:
- * Validate optimizer scoring against the live Model_Matrix output.
+ * Validate shared optimizer scoring against live Model_Matrix output.
+ *
+ * This validator uses the same weighted-edge scorer intended for optimizer use:
+ *   sharedScoreGameFromEdges_()
  *
  * Run manually after the normal model has been scored:
  *   runOptimizerValidation()
@@ -44,13 +47,14 @@ function runOptimizerValidation() {
     "Away Team",
     "Home Team",
     "Live Away Score",
-    "Optimizer Away Score",
+    "Shared Away Score",
     "Away Score Diff",
     "Live Home Score",
-    "Optimizer Home Score",
+    "Shared Home Score",
     "Home Score Diff",
     "Live Pick",
-    "Optimizer Pick",
+    "Shared Pick",
+    "Used Features",
     "Score Match",
     "Pick Match"
   ]);
@@ -62,18 +66,26 @@ function runOptimizerValidation() {
   let firstMismatch = null;
 
   modelData.games.forEach(game => {
-    const optScore = calculateValidationScore_(game, settings.features, weights);
-    if (!optScore.hasScore) return;
+    const sharedScore = sharedScoreGameFromEdges_(
+      game.row,
+      modelData.edgeColumnMap,
+      settings.features,
+      weights,
+      game.awayTeam,
+      game.homeTeam
+    );
+
+    if (!sharedScore.hasScore) return;
 
     tested++;
 
-    const awayDiff = optScore.awayScore - game.liveAwayScore;
-    const homeDiff = optScore.homeScore - game.liveHomeScore;
+    const awayDiff = sharedScore.awayScore - game.liveAwayScore;
+    const homeDiff = sharedScore.homeScore - game.liveHomeScore;
 
     const scoreMatch = Math.abs(awayDiff) <= OPT_VALIDATION.SCORE_TOLERANCE &&
       Math.abs(homeDiff) <= OPT_VALIDATION.SCORE_TOLERANCE;
 
-    const pickMatch = sameTeam_(game.livePick, optScore.pick);
+    const pickMatch = sameTeam_(game.livePick, sharedScore.pick);
 
     if (scoreMatch) scoreMatches++;
     if (pickMatch) pickMatches++;
@@ -82,11 +94,13 @@ function runOptimizerValidation() {
       if (!firstMismatch) {
         firstMismatch = {
           game,
-          optScore,
+          sharedScore,
           awayDiff,
           homeDiff,
           scoreMatch,
-          pickMatch
+          pickMatch,
+          modelData,
+          weights
         };
       }
     }
@@ -96,27 +110,29 @@ function runOptimizerValidation() {
       game.awayTeam,
       game.homeTeam,
       game.liveAwayScore,
-      optScore.awayScore,
+      sharedScore.awayScore,
       awayDiff,
       game.liveHomeScore,
-      optScore.homeScore,
+      sharedScore.homeScore,
       homeDiff,
       game.livePick,
-      optScore.pick,
+      sharedScore.pick,
+      sharedScore.usedFeatures,
       scoreMatch ? "TRUE" : "FALSE",
       pickMatch ? "TRUE" : "FALSE"
     ]);
   });
 
-  output.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["SUMMARY", "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Games Tested", tested, "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Score Matches", scoreMatches, "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Pick Matches", pickMatches, "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Mismatches", mismatches, "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["SUMMARY", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Games Tested", tested, "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Score Matches", scoreMatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Pick Matches", pickMatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Mismatches", mismatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Mapped Edge Columns", Object.keys(modelData.edgeColumnMap).length, "", "", "", "", "", "", "", "", "", "", "", ""]);
 
   if (firstMismatch) {
-    appendFirstMismatchBreakdown_(output, firstMismatch, settings.features, weights);
+    appendFirstMismatchBreakdown_(output, firstMismatch, settings.features);
   }
 
   writeOptimizerValidationOutput_(ss, output);
@@ -137,7 +153,7 @@ function readOptimizerValidationModelMatrix_(sheet, features) {
     livePick: getHeaderIndex_(headers, OPT_VALIDATION.REQUIRED_MODEL_HEADERS.livePick)
   };
 
-  const featureColumns = resolveFeatureColumnsForSettings_(headers, features);
+  const edgeColumnMap = sharedBuildEdgeColumnMap_(headers, features, "");
   const games = [];
 
   for (let rowIndex = headerRowIndex + 1; rowIndex < values.length; rowIndex++) {
@@ -151,113 +167,61 @@ function readOptimizerValidationModelMatrix_(sheet, features) {
     if (!awayTeam || !homeTeam || !livePick) continue;
     if (!isFinite(liveAwayScore) || !isFinite(liveHomeScore)) continue;
 
-    const featureValues = {};
-
-    features.forEach(feature => {
-      const columns = featureColumns[feature.name];
-      if (!columns) return;
-
-      const awayVal = Number(row[columns.away]);
-      const homeVal = Number(row[columns.home]);
-
-      if (!isFinite(awayVal) || !isFinite(homeVal)) return;
-
-      featureValues[feature.name] = {
-        away: awayVal,
-        home: homeVal
-      };
-    });
-
     games.push({
       rowNumber: rowIndex + 1,
+      row,
       awayTeam,
       homeTeam,
       liveAwayScore,
       liveHomeScore,
-      livePick,
-      featureValues
+      livePick
     });
   }
 
   return {
     headers,
     indexes,
-    featureColumns,
+    edgeColumnMap,
     games
   };
 }
 
 
-function calculateValidationScore_(game, features, weightsByFeature) {
-  let awayScore = 0;
-  let homeScore = 0;
-  let used = 0;
-
-  features.forEach(feature => {
-    const weight = Number(weightsByFeature[feature.name] || 0);
-    if (weight === 0) return;
-
-    const values = game.featureValues[feature.name];
-    if (!values) return;
-
-    awayScore += values.away * weight * feature.direction;
-    homeScore += values.home * weight * feature.direction;
-    used++;
-  });
-
-  return {
-    awayScore,
-    homeScore,
-    pick: awayScore > homeScore ? game.awayTeam : homeScore > awayScore ? game.homeTeam : "Tie",
-    usedFeatures: used,
-    hasScore: used > 0
-  };
-}
-
-
-function appendFirstMismatchBreakdown_(output, mismatch, features, weightsByFeature) {
+function appendFirstMismatchBreakdown_(output, mismatch, features) {
   const game = mismatch.game;
-  const optScore = mismatch.optScore;
+  const sharedScore = mismatch.sharedScore;
+  const contributionRows = sharedContributionRowsFromEdges_(
+    game.row,
+    mismatch.modelData.edgeColumnMap,
+    features,
+    mismatch.weights
+  );
 
-  output.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["FIRST MISMATCH DETAIL", "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Game", game.awayTeam + " @ " + game.homeTeam, "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Live Away Score", game.liveAwayScore, "Optimizer Away Score", optScore.awayScore, "Diff", mismatch.awayDiff, "", "", "", "", "", "", ""]);
-  output.push(["Live Home Score", game.liveHomeScore, "Optimizer Home Score", optScore.homeScore, "Diff", mismatch.homeDiff, "", "", "", "", "", "", ""]);
-  output.push(["Live Pick", game.livePick, "Optimizer Pick", optScore.pick, "", "", "", "", "", "", "", "", ""]);
-  output.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["FIRST MISMATCH DETAIL", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Game", game.awayTeam + " @ " + game.homeTeam, "", "", "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Live Away Score", game.liveAwayScore, "Shared Away Score", sharedScore.awayScore, "Diff", mismatch.awayDiff, "", "", "", "", "", "", "", ""]);
+  output.push(["Live Home Score", game.liveHomeScore, "Shared Home Score", sharedScore.homeScore, "Diff", mismatch.homeDiff, "", "", "", "", "", "", "", ""]);
+  output.push(["Live Pick", game.livePick, "Shared Pick", sharedScore.pick, "Used Features", sharedScore.usedFeatures, "", "", "", "", "", "", "", ""]);
+  output.push(["Weighted Edge Sum", sharedScore.weightedEdgeSum, "Scale", SHARED_SCORING.SCORE_SCALE, "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push([
     "Feature",
-    "Away Value",
-    "Home Value",
+    "Edge",
     "Weight",
-    "Direction",
-    "Away Contribution",
-    "Home Contribution",
-    "Contribution Edge",
-    "", "", "", "", ""
+    "Raw Contribution",
+    "Scaled Contribution",
+    "", "", "", "", "", "", "", "", ""
   ]);
 
-  features.forEach(feature => {
-    const values = game.featureValues[feature.name];
-    if (!values) return;
-
-    const weight = Number(weightsByFeature[feature.name] || 0);
-    if (weight === 0) return;
-
-    const awayContribution = values.away * weight * feature.direction;
-    const homeContribution = values.home * weight * feature.direction;
-
+  contributionRows.forEach(item => {
     output.push([
-      feature.name,
-      values.away,
-      values.home,
-      weight,
-      feature.direction,
-      awayContribution,
-      homeContribution,
-      awayContribution - homeContribution,
-      "", "", "", "", ""
+      item.feature,
+      item.edge,
+      item.weight,
+      item.rawContribution,
+      item.scaledContribution,
+      "", "", "", "", "", "", "", "", ""
     ]);
   });
 }
@@ -280,7 +244,7 @@ function writeOptimizerValidationOutput_(ss, output) {
 
   sheet.getRange(1, 1, rectangular.length, width).setValues(rectangular);
   sheet.getRange(1, 1, 1, width).setFontWeight("bold");
-  sheet.autoResizeColumns(1, Math.min(width, 13));
+  sheet.autoResizeColumns(1, Math.min(width, 14));
 }
 
 
