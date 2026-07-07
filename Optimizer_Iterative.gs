@@ -1,9 +1,11 @@
 /***************************************
- * ITERATIVE MODEL OPTIMIZER v0.4.0
+ * ITERATIVE MODEL OPTIMIZER v0.5.0
  *
  * Purpose:
  * - Backtest current weights against HISTORY
- * - Run Stage 1 individual stat tests
+ * - Run true iterative hill-climbing optimization
+ * - Accept the single best improvement each round
+ * - Stop when no improvement remains or max rounds is reached
  * - Write OPTIMIZER_ITERATIVE
  * - Write Suggested Weight only
  * - Write OPTIMIZER_DEBUG
@@ -29,10 +31,12 @@ const ITER_OPT = {
 
   DEFAULT_MIN_WEIGHT: 0,
   DEFAULT_MAX_WEIGHT: 10,
+  MAX_ROUNDS: 8,
 
   MIN_GAMES: 50,
   MIN_WIN_RATE: 0.52,
   MIN_ROI_IMPROVEMENT: 0.005,
+  MIN_PROFIT_IMPROVEMENT: 0.01,
 
   SETTINGS_HEADERS: {
     stat: "Stat",
@@ -75,61 +79,92 @@ function runIterativeOptimizer() {
     throw new Error("Not enough usable HISTORY rows for optimizer testing. Found " + history.games.length + ". Minimum required: " + ITER_OPT.MIN_GAMES + ".");
   }
 
-  const baselineWeights = buildWeightMap_(optimizerSettings.features, "currentWeight");
-  const baseline = backtestWithProductionScoring_(history, optimizerSettings.features, baselineWeights);
+  const startingWeights = buildWeightMap_(optimizerSettings.features, "currentWeight");
+  const baseline = backtestWithProductionScoring_(history, optimizerSettings.features, startingWeights);
+
+  let currentWeights = Object.assign({}, startingWeights);
+  let currentPerf = baseline;
 
   const results = [];
-  results.push(makeResultRow_("BASELINE", "Current live weights", baselineWeights, baseline, baseline));
+  results.push(makeResultRow_("BASELINE", "Current live weights", currentWeights, currentPerf, baseline, "CONTROL"));
 
-  const stage1Best = [];
+  const acceptedSteps = [];
 
-  optimizerSettings.features
-    .filter(feature => feature.active && feature.optimize)
-    .forEach(feature => {
-      let best = null;
+  for (let round = 1; round <= ITER_OPT.MAX_ROUNDS; round++) {
+    const candidates = [];
 
-      for (let weight = feature.minWeight; weight <= feature.maxWeight; weight++) {
-        const testWeights = Object.assign({}, baselineWeights);
-        testWeights[feature.name] = weight;
+    optimizerSettings.features
+      .filter(feature => feature.active && feature.optimize)
+      .forEach(feature => {
+        for (let weight = feature.minWeight; weight <= feature.maxWeight; weight++) {
+          if (Number(currentWeights[feature.name] || 0) === weight) continue;
 
-        const perf = backtestWithProductionScoring_(history, optimizerSettings.features, testWeights);
-        results.push(makeResultRow_("STAGE 1 TEST", feature.name + " = " + weight, testWeights, perf, baseline));
+          const testWeights = Object.assign({}, currentWeights);
+          testWeights[feature.name] = weight;
 
-        if (!best || isBetterResult_(perf, best.perf, baseline)) {
-          best = {
+          const perf = backtestWithProductionScoring_(history, optimizerSettings.features, testWeights);
+          const candidate = {
+            round,
             feature,
             weight,
             weights: testWeights,
             perf
           };
+
+          candidates.push(candidate);
+          results.push(makeResultRow_(
+            "ROUND " + round + " TEST",
+            feature.name + " = " + weight,
+            testWeights,
+            perf,
+            baseline,
+            decideResult_(perf, currentPerf, baseline)
+          ));
         }
-      }
+      });
 
-      if (best) {
-        stage1Best.push(best);
-        results.push(makeResultRow_("STAGE 1 BEST", best.feature.name + " best = " + best.weight, best.weights, best.perf, baseline));
-      }
-    });
+    candidates.sort((a, b) => compareCandidate_(a, b, currentPerf, baseline));
+    const best = candidates[0];
 
-  stage1Best.sort((a, b) => finiteOrZero_(b.perf.roi) - finiteOrZero_(a.perf.roi));
+    if (!best || !isMeaningfulImprovement_(best.perf, currentPerf, baseline)) {
+      results.push(makeResultRow_(
+        "STOP",
+        "No meaningful improvement found after round " + round,
+        currentWeights,
+        currentPerf,
+        baseline,
+        "STOP"
+      ));
+      break;
+    }
 
-  const accepted = stage1Best.find(candidate => passesAcceptanceRules_(candidate.perf, baseline));
-  const finalCandidate = accepted || stage1Best[0];
+    currentWeights = Object.assign({}, best.weights);
+    currentPerf = best.perf;
+    acceptedSteps.push(best);
 
-  if (finalCandidate) {
     results.push(makeResultRow_(
-      accepted ? "FINAL RECOMMENDATION" : "FINAL WATCHLIST",
-      finalCandidate.feature.name,
-      finalCandidate.weights,
-      finalCandidate.perf,
-      baseline
+      "ROUND " + round + " ACCEPTED",
+      best.feature.name + " -> " + best.weight,
+      currentWeights,
+      currentPerf,
+      baseline,
+      "ACCEPT"
     ));
-
-    writeSuggestedWeights_(settingsSheet, optimizerSettings, finalCandidate.weights, Boolean(accepted));
   }
 
+  const finalDecision = passesAcceptanceRules_(currentPerf, baseline) ? "FINAL RECOMMENDATION" : "FINAL WATCHLIST";
+  results.push(makeResultRow_(
+    finalDecision,
+    acceptedSteps.length ? acceptedSteps.map(step => step.feature.name + "=" + step.weight).join(", ") : "No accepted changes",
+    currentWeights,
+    currentPerf,
+    baseline,
+    finalDecision === "FINAL RECOMMENDATION" ? "ACCEPT" : "WATCHLIST"
+  ));
+
+  writeSuggestedWeights_(settingsSheet, optimizerSettings, currentWeights, finalDecision === "FINAL RECOMMENDATION");
   writeOptimizerResults_(ss, results, optimizerSettings.features);
-  writeOptimizerDebug_(ss, history, optimizerSettings.features, baselineWeights, stage1Best[0]);
+  writeOptimizerDebug_(ss, history, optimizerSettings.features, startingWeights, currentWeights, acceptedSteps, baseline, currentPerf);
   SpreadsheetApp.flush();
 }
 
@@ -205,6 +240,44 @@ function buildProductionSettingsFromWeights_(features, weightsByFeature) {
 }
 
 
+function compareCandidate_(a, b, currentPerf, baseline) {
+  const aImproves = isMeaningfulImprovement_(a.perf, currentPerf, baseline);
+  const bImproves = isMeaningfulImprovement_(b.perf, currentPerf, baseline);
+
+  if (aImproves && !bImproves) return -1;
+  if (!aImproves && bImproves) return 1;
+
+  const roiDiff = finiteOrZero_(b.perf.roi) - finiteOrZero_(a.perf.roi);
+  if (Math.abs(roiDiff) > 0.000001) return roiDiff;
+
+  const profitDiff = finiteOrZero_(b.perf.profit) - finiteOrZero_(a.perf.profit);
+  if (Math.abs(profitDiff) > 0.000001) return profitDiff;
+
+  return finiteOrZero_(b.perf.winRate) - finiteOrZero_(a.perf.winRate);
+}
+
+
+function isMeaningfulImprovement_(test, current, baseline) {
+  if (finiteOrZero_(test.games) < ITER_OPT.MIN_GAMES) return false;
+  if (finiteOrZero_(test.winRate) < ITER_OPT.MIN_WIN_RATE) return false;
+
+  const roiImprovement = finiteOrZero_(test.roi) - finiteOrZero_(current.roi);
+  const profitImprovement = finiteOrZero_(test.profit) - finiteOrZero_(current.profit);
+
+  if (roiImprovement < ITER_OPT.MIN_ROI_IMPROVEMENT) return false;
+  if (profitImprovement < ITER_OPT.MIN_PROFIT_IMPROVEMENT) return false;
+
+  return finiteOrZero_(test.profit) > finiteOrZero_(baseline.profit);
+}
+
+
+function decideResult_(test, current, baseline) {
+  if (isMeaningfulImprovement_(test, current, baseline)) return "CANDIDATE";
+  if (finiteOrZero_(test.profit) > finiteOrZero_(current.profit) || finiteOrZero_(test.roi) > finiteOrZero_(current.roi)) return "WATCHLIST";
+  return "REJECT";
+}
+
+
 function readOptimizerHistory_(sheet) {
   const values = sheet.getDataRange().getValues();
   const headerInfo = findHistoryHeaderRow_(values);
@@ -256,7 +329,7 @@ function buildScoringHeadersFromHistoryHeaders_(headers) {
 }
 
 
-function writeOptimizerDebug_(ss, history, features, baselineWeights, topCandidate) {
+function writeOptimizerDebug_(ss, history, features, startingWeights, finalWeights, acceptedSteps, baseline, finalPerf) {
   let sheet = ss.getSheetByName(ITER_OPT.DEBUG_SHEET);
   if (!sheet) sheet = ss.insertSheet(ITER_OPT.DEBUG_SHEET);
   sheet.clearContents();
@@ -264,49 +337,64 @@ function writeOptimizerDebug_(ss, history, features, baselineWeights, topCandida
   const output = [];
   output.push(["Debug Item", "Value"]);
   output.push(["Usable Games", history.games.length]);
-
-  const baselineSettings = buildProductionSettingsFromWeights_(features, baselineWeights);
-  output.push(["Baseline Active Weighted Features", baselineSettings.length]);
-
-  if (!history.games.length) {
-    sheet.getRange(1, 1, output.length, output[0].length).setValues(output);
-    return;
-  }
-
-  const game = history.games[0];
-  const baselineEdgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, baselineSettings);
-  const baselineScore = scoreModelRowWithSettings(game.row, history.scoringHeadersArray, baselineSettings, baselineEdgeStats);
-
-  const topWeights = topCandidate ? topCandidate.weights : baselineWeights;
-  const topSettings = buildProductionSettingsFromWeights_(features, topWeights);
-  const topEdgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, topSettings);
-  const topScore = scoreModelRowWithSettings(game.row, history.scoringHeadersArray, topSettings, topEdgeStats);
-
-  output.push(["Sample Game", game.awayTeam + " @ " + game.homeTeam]);
-  output.push(["Winner", game.winner]);
-  output.push(["Away ML", game.awayML]);
-  output.push(["Home ML", game.homeML]);
-  output.push(["Baseline Away Score", baselineScore.awayScore]);
-  output.push(["Baseline Home Score", baselineScore.homeScore]);
-  output.push(["Baseline Pick", baselineScore.pick]);
-  output.push(["Top Test", topCandidate ? topCandidate.feature.name + " = " + topCandidate.weight : "N/A"]);
-  output.push(["Top Away Score", topScore.awayScore]);
-  output.push(["Top Home Score", topScore.homeScore]);
-  output.push(["Top Pick", topScore.pick]);
+  output.push(["Accepted Steps", acceptedSteps.length]);
+  output.push(["Baseline Games", baseline.games]);
+  output.push(["Baseline Wins", baseline.wins]);
+  output.push(["Baseline Losses", baseline.losses]);
+  output.push(["Baseline Win %", baseline.winRate]);
+  output.push(["Baseline Profit", baseline.profit]);
+  output.push(["Baseline ROI", baseline.roi]);
+  output.push(["Final Games", finalPerf.games]);
+  output.push(["Final Wins", finalPerf.wins]);
+  output.push(["Final Losses", finalPerf.losses]);
+  output.push(["Final Win %", finalPerf.winRate]);
+  output.push(["Final Profit", finalPerf.profit]);
+  output.push(["Final ROI", finalPerf.roi]);
   output.push(["", ""]);
-  output.push(["Feature", "Weight", "Raw Edge", "Mean", "StdDev", "Z-Score", "Contribution"]);
+  output.push(["Accepted Step", "Change", "Games", "Wins", "Losses", "Win %", "Profit", "ROI"]);
 
-  baselineScore.contributions.forEach(item => {
+  acceptedSteps.forEach((step, idx) => {
     output.push([
-      item.stat,
-      item.weight,
-      item.rawEdge,
-      item.mean,
-      item.stdDev,
-      item.zScore,
-      item.contribution
+      idx + 1,
+      step.feature.name + " -> " + step.weight,
+      step.perf.games,
+      step.perf.wins,
+      step.perf.losses,
+      step.perf.winRate,
+      step.perf.profit,
+      step.perf.roi
     ]);
   });
+
+  output.push(["", ""]);
+  output.push(["Sample Game Breakdown", ""]);
+
+  if (history.games.length) {
+    const game = history.games[0];
+    const finalSettings = buildProductionSettingsFromWeights_(features, finalWeights);
+    const edgeStats = calculateEdgeStats(history.rows, history.scoringHeadersArray, finalSettings);
+    const score = scoreModelRowWithSettings(game.row, history.scoringHeadersArray, finalSettings, edgeStats);
+
+    output.push(["Sample Game", game.awayTeam + " @ " + game.homeTeam]);
+    output.push(["Winner", game.winner]);
+    output.push(["Final Away Score", score.awayScore]);
+    output.push(["Final Home Score", score.homeScore]);
+    output.push(["Final Pick", score.pick]);
+    output.push(["", ""]);
+    output.push(["Feature", "Weight", "Raw Edge", "Mean", "StdDev", "Z-Score", "Contribution"]);
+
+    score.contributions.forEach(item => {
+      output.push([
+        item.stat,
+        item.weight,
+        item.rawEdge,
+        item.mean,
+        item.stdDev,
+        item.zScore,
+        item.contribution
+      ]);
+    });
+  }
 
   const width = Math.max.apply(null, output.map(row => row.length));
   const rectangular = output.map(row => {
@@ -450,17 +538,19 @@ function writeOptimizerResults_(ss, results, features) {
 }
 
 
-function makeResultRow_(stage, test, weights, perf, baseline) {
+function makeResultRow_(stage, test, weights, perf, baseline, overrideDecision) {
   const roiChange = finiteOrZero_(perf.roi) - finiteOrZero_(baseline.roi);
 
-  let decision = "REJECT";
+  let decision = overrideDecision || "REJECT";
 
-  if (stage === "BASELINE") {
-    decision = "CONTROL";
-  } else if (passesAcceptanceRules_(perf, baseline)) {
-    decision = "ACCEPT";
-  } else if (finiteOrZero_(perf.profit) > finiteOrZero_(baseline.profit) || finiteOrZero_(perf.roi) > finiteOrZero_(baseline.roi)) {
-    decision = "WATCHLIST";
+  if (!overrideDecision) {
+    if (stage === "BASELINE") {
+      decision = "CONTROL";
+    } else if (passesAcceptanceRules_(perf, baseline)) {
+      decision = "ACCEPT";
+    } else if (finiteOrZero_(perf.profit) > finiteOrZero_(baseline.profit) || finiteOrZero_(perf.roi) > finiteOrZero_(baseline.roi)) {
+      decision = "WATCHLIST";
+    }
   }
 
   return {
@@ -525,22 +615,9 @@ function passesAcceptanceRules_(perf, baseline) {
 }
 
 
-function isBetterResult_(test, currentBest, baseline) {
-  if (!currentBest) return true;
-
-  const testPass = passesAcceptanceRules_(test, baseline);
-  const bestPass = passesAcceptanceRules_(currentBest, baseline);
-
-  if (testPass && !bestPass) return true;
-  if (!testPass && bestPass) return false;
-
-  return finiteOrZero_(test.roi) > finiteOrZero_(currentBest.roi);
-}
-
-
 function findSettingsHeaderRow_(values) {
   const h = ITER_OPT.SETTINGS_HEADERS;
-  return findHeaderRow_(values, [h.stat, h.active, h.weight, h.direction], "Settings");
+  return findHeaderRow_(values, [h.stat, h.active, h.weight], "Settings");
 }
 
 
