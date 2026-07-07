@@ -1,14 +1,14 @@
 /***************************************
- * SHADOW MODEL v0.1.0
+ * SHADOW MODEL v0.2.0
  *
  * Purpose:
  * - Add/maintain a Test Weight column on Settings
- * - Score MODEL_MATRIX with Test Weight values
- * - Write shadow model outputs beside live model outputs
- * - Does NOT change live Weight values or live picks
+ * - Copy MODEL_MATRIX to MODEL_MATRIX_SHADOW
+ * - Score MODEL_MATRIX_SHADOW with Test Weight values
+ * - Does NOT change live Weight values or live MODEL_MATRIX outputs
  *
  * Main runner:
- *   scoreShadowModelMatrix()
+ *   buildShadowModelMatrix()
  *
  * Recommended use:
  *   Run after scoreModelMatrix() and before HISTORY snapshot.
@@ -16,15 +16,9 @@
 
 const SHADOW_MODEL = {
   SETTINGS_SHEET: "Settings",
-  MODEL_MATRIX_SHEET: "MODEL_MATRIX",
-  TEST_WEIGHT_HEADER: "Test Weight",
-
-  OUTPUT_HEADERS: [
-    "Shadow Away Model Score",
-    "Shadow Home Model Score",
-    "Shadow Model Pick",
-    "Shadow Confidence"
-  ]
+  LIVE_MODEL_MATRIX_SHEET: "MODEL_MATRIX",
+  SHADOW_MODEL_MATRIX_SHEET: "MODEL_MATRIX_SHADOW",
+  TEST_WEIGHT_HEADER: "Test Weight"
 };
 
 
@@ -38,30 +32,44 @@ function setupShadowModelTestWeights() {
 }
 
 
-function scoreShadowModelMatrix() {
+function buildShadowModelMatrix() {
   const ss = SpreadsheetApp.getActive();
-  const modelSheet = ss.getSheetByName(SHADOW_MODEL.MODEL_MATRIX_SHEET) || ss.getSheetByName("Model_Matrix");
-  if (!modelSheet) throw new Error("Missing MODEL_MATRIX / Model_Matrix sheet.");
+  const liveSheet = ss.getSheetByName(SHADOW_MODEL.LIVE_MODEL_MATRIX_SHEET) || ss.getSheetByName("Model_Matrix");
+  if (!liveSheet) throw new Error("Missing MODEL_MATRIX / Model_Matrix sheet.");
+
+  const shadowSheet = getOrCreateShadowSheet_(ss);
+  copyLiveMatrixToShadow_(liveSheet, shadowSheet);
+  scoreShadowModelMatrix_();
+}
+
+
+function runShadowModelUpdate() {
+  buildShadowModelMatrix();
+}
+
+
+function scoreShadowModelMatrix_() {
+  const ss = SpreadsheetApp.getActive();
+  const shadowSheet = ss.getSheetByName(SHADOW_MODEL.SHADOW_MODEL_MATRIX_SHEET);
+  if (!shadowSheet) throw new Error("Missing MODEL_MATRIX_SHADOW sheet.");
 
   const settings = getShadowModelSettings_();
   if (!settings.length) throw new Error("No active Test Weight settings found. Run setupShadowModelTestWeights() or fill Test Weight values.");
 
-  ensureShadowModelMatrixColumns_(modelSheet);
-
-  const values = modelSheet.getDataRange().getValues();
+  const values = shadowSheet.getDataRange().getValues();
   if (values.length < 2) return;
 
   const headers = values[0];
   const rows = values.slice(1);
   const edgeStats = calculateEdgeStats(rows, headers, settings);
 
-  const shadowAwayCol = headers.indexOf("Shadow Away Model Score");
-  const shadowHomeCol = headers.indexOf("Shadow Home Model Score");
-  const shadowPickCol = headers.indexOf("Shadow Model Pick");
-  const shadowConfidenceCol = headers.indexOf("Shadow Confidence");
+  const awayScoreCol = headers.indexOf("Away Model Score");
+  const homeScoreCol = headers.indexOf("Home Model Score");
+  const pickCol = headers.indexOf("Model Pick");
+  const confidenceCol = headers.indexOf("Confidence");
 
-  if ([shadowAwayCol, shadowHomeCol, shadowPickCol, shadowConfidenceCol].some(col => col === -1)) {
-    throw new Error("Shadow output columns were not found after creation.");
+  if ([awayScoreCol, homeScoreCol, pickCol, confidenceCol].some(col => col === -1)) {
+    throw new Error("MODEL_MATRIX_SHADOW missing live score output columns.");
   }
 
   const updates = [];
@@ -77,13 +85,27 @@ function scoreShadowModelMatrix() {
   });
 
   if (updates.length) {
-    modelSheet.getRange(2, shadowAwayCol + 1, updates.length, 4).setValues(updates);
+    shadowSheet.getRange(2, awayScoreCol + 1, updates.length, 4).setValues(updates);
   }
 }
 
 
-function runShadowModelUpdate() {
-  scoreShadowModelMatrix();
+function getOrCreateShadowSheet_(ss) {
+  let sheet = ss.getSheetByName(SHADOW_MODEL.SHADOW_MODEL_MATRIX_SHEET);
+  if (!sheet) sheet = ss.insertSheet(SHADOW_MODEL.SHADOW_MODEL_MATRIX_SHEET);
+  return sheet;
+}
+
+
+function copyLiveMatrixToShadow_(liveSheet, shadowSheet) {
+  const values = liveSheet.getDataRange().getValues();
+  shadowSheet.clearContents();
+
+  if (!values.length) return;
+
+  shadowSheet.getRange(1, 1, values.length, values[0].length).setValues(values);
+  shadowSheet.getRange(1, 1, 1, values[0].length).setFontWeight("bold");
+  shadowSheet.autoResizeColumns(1, Math.min(values[0].length, 20));
 }
 
 
@@ -112,7 +134,6 @@ function ensureShadowTestWeightColumn_(settingsSheet) {
 function copySuggestedWeightsToTestWeights_(settingsSheet, info) {
   const headers = info.headers;
   const h = {
-    stat: "Stat",
     weight: "Weight",
     suggestedWeight: "Suggested Weight",
     testWeight: SHADOW_MODEL.TEST_WEIGHT_HEADER
@@ -137,21 +158,6 @@ function copySuggestedWeightsToTestWeights_(settingsSheet, info) {
 
     settingsSheet.getRange(rowNumber, testCol + 1).setValue(testWeight);
   }
-}
-
-
-function ensureShadowModelMatrixColumns_(modelSheet) {
-  let values = modelSheet.getDataRange().getValues();
-  if (!values.length) throw new Error("MODEL_MATRIX is empty.");
-
-  let headers = values[0].map(value => String(value || "").trim());
-
-  SHADOW_MODEL.OUTPUT_HEADERS.forEach(header => {
-    if (headers.indexOf(header) === -1) {
-      modelSheet.getRange(1, modelSheet.getLastColumn() + 1).setValue(header);
-      headers.push(header);
-    }
-  });
 }
 
 
