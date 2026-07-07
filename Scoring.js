@@ -18,44 +18,85 @@ function scoreModelMatrix() {
   const updates = [];
 
   rows.forEach(row => {
-    let totalScore = 0;
-    let totalWeight = 0;
-
-    settings.forEach(setting => {
-      const edgeColName = setting.stat + " Edge";
-      const edgeCol = headers.indexOf(edgeColName);
-      if (edgeCol === -1) return;
-
-      const rawEdge = parseNumber(row[edgeCol]);
-      if (rawEdge === "") return;
-
-      const stats = edgeStats[edgeColName];
-      if (!stats || stats.stdDev === 0) return;
-
-      const zScore = (rawEdge - stats.mean) / stats.stdDev;
-      totalScore += zScore * setting.weight;
-      totalWeight += setting.weight;
-    });
-
-    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
-
-    const awayScore = roundScore(finalScore, 4);
-    const homeScore = roundScore(finalScore * -1, 4);
-
-    const awayTeam = row[headers.indexOf("Away Team")];
-    const homeTeam = row[headers.indexOf("Home Team")];
-
-    const pick =
-      finalScore > 0 ? awayTeam :
-      finalScore < 0 ? homeTeam :
-      "Coin Flip";
-
-    const confidence = Math.min(100, Math.round(Math.abs(finalScore) * 25));
-
-    updates.push([awayScore, homeScore, pick, confidence]);
+    const result = scoreModelRowWithSettings(row, headers, settings, edgeStats);
+    updates.push([result.awayScore, result.homeScore, result.pick, result.confidence]);
   });
 
   sheet.getRange(2, awayScoreCol + 1, updates.length, 4).setValues(updates);
+}
+
+
+/**
+ * Shared production scoring helper.
+ * Use this anywhere another module needs to reproduce Model_Matrix scoring.
+ *
+ * Important:
+ * - settings must be an array of { stat, weight }
+ * - edgeStats must come from calculateEdgeStats(rows, headers, settings)
+ * - row must be from the same row population used to build edgeStats
+ */
+function scoreModelRowWithSettings(row, headers, settings, edgeStats) {
+  let totalScore = 0;
+  let totalWeight = 0;
+  let usedFeatures = 0;
+  const contributions = [];
+
+  settings.forEach(setting => {
+    const edgeColName = setting.stat + " Edge";
+    const edgeCol = headers.indexOf(edgeColName);
+    if (edgeCol === -1) return;
+
+    const rawEdge = parseNumber(row[edgeCol]);
+    if (rawEdge === "") return;
+
+    const stats = edgeStats[edgeColName];
+    if (!stats || stats.stdDev === 0) return;
+
+    const zScore = (rawEdge - stats.mean) / stats.stdDev;
+    const contribution = zScore * setting.weight;
+
+    totalScore += contribution;
+    totalWeight += setting.weight;
+    usedFeatures++;
+
+    contributions.push({
+      stat: setting.stat,
+      weight: setting.weight,
+      edgeColName: edgeColName,
+      rawEdge: rawEdge,
+      mean: stats.mean,
+      stdDev: stats.stdDev,
+      zScore: zScore,
+      contribution: contribution
+    });
+  });
+
+  const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+
+  const awayScore = roundScore(finalScore, 4);
+  const homeScore = roundScore(finalScore * -1, 4);
+
+  const awayTeam = row[headers.indexOf("Away Team")];
+  const homeTeam = row[headers.indexOf("Home Team")];
+
+  const pick =
+    finalScore > 0 ? awayTeam :
+    finalScore < 0 ? homeTeam :
+    "Coin Flip";
+
+  const confidence = Math.min(100, Math.round(Math.abs(finalScore) * 25));
+
+  return {
+    awayScore: awayScore,
+    homeScore: homeScore,
+    pick: pick,
+    confidence: confidence,
+    finalScore: finalScore,
+    totalScore: totalScore,
+    totalWeight: totalWeight,
+    usedFeatures: usedFeatures,
+    contributions: contributions
+  };
 }
 
 
@@ -148,33 +189,15 @@ function debugOneGameScore() {
 
   Logger.log("GAME: " + row[headers.indexOf("Away Team")] + " @ " + row[headers.indexOf("Home Team")]);
 
-  settings.forEach(setting => {
-    const edgeColName = setting.stat + " Edge";
-    const edgeCol = headers.indexOf(edgeColName);
+  const result = scoreModelRowWithSettings(row, headers, settings, edgeStats);
 
-    if (edgeCol === -1) {
-      Logger.log(setting.stat + " | NOT FOUND");
-      return;
-    }
-
-    const rawEdge = parseNumber(row[edgeCol]);
-    const stats = edgeStats[edgeColName];
-
-    if (rawEdge === "" || !stats || stats.stdDev === 0) {
-      Logger.log(setting.stat + " | skipped");
-      return;
-    }
-
-    const zScore = (rawEdge - stats.mean) / stats.stdDev;
-    const contribution = zScore * setting.weight;
-
+  result.contributions.forEach(item => {
     Logger.log(
-      setting.stat +
-      " | weight=" + setting.weight +
-      " | rawEdge=" + rawEdge +
-      " | z=" + zScore.toFixed(4) +
-      " | contribution=" + contribution.toFixed(4)
+      item.stat +
+      " | weight=" + item.weight +
+      " | rawEdge=" + item.rawEdge +
+      " | z=" + item.zScore.toFixed(4) +
+      " | contribution=" + item.contribution.toFixed(4)
     );
   });
 }
-
