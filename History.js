@@ -1,4 +1,5 @@
 function appendPregameHistorySnapshot() {
+  const ss = SpreadsheetApp.getActive();
   const historySheet = getOrCreateSheet("HISTORY");
   const archiveSheet = getOrCreateSheet("HISTORY_ARCHIVE");
 
@@ -10,12 +11,16 @@ function appendPregameHistorySnapshot() {
   const matrixHeaders = matrixValues[0];
   const matrixRows = matrixValues.slice(1);
 
-  const historyHeaders = getHistoryBaseHeaders().concat(
-    matrixHeaders.map(header => "MM_" + header)
-  );
+  const shadowSheet = ss.getSheetByName("MODEL_MATRIX_SHADOW");
+  const shadowData = getShadowHistoryData_(shadowSheet);
 
-  ensureExactHistoryHeaders(historySheet, historyHeaders);
-  ensureExactHistoryHeaders(archiveSheet, historyHeaders);
+  const expectedHeaders = getHistoryBaseHeaders()
+    .concat(matrixHeaders.map(header => "MM_" + header))
+    .concat(getShadowHistorySummaryHeaders())
+    .concat(shadowData.headers.map(header => "SM_" + header));
+
+  const historyHeaders = ensureHistoryHeadersAllowAdditions(historySheet, expectedHeaders);
+  const archiveHeaders = ensureHistoryHeadersAllowAdditions(archiveSheet, expectedHeaders);
 
   const existingGameIds = getExistingHistoryGameIds(historySheet);
 
@@ -25,7 +30,8 @@ function appendPregameHistorySnapshot() {
     "yyyy-MM-dd HH:mm:ss"
   );
 
-  const rowsToAppend = [];
+  const historyRowsToAppend = [];
+  const archiveRowsToAppend = [];
 
   matrixRows.forEach(matrixRow => {
     const row = rowArrayToObject(matrixHeaders, matrixRow);
@@ -69,65 +75,167 @@ function appendPregameHistorySnapshot() {
       "None";
 
     const bestEdge = findBestEdge(row);
+    const shadowRow = shadowData.byGameId[String(gameId)] || null;
+    const shadow = buildShadowHistorySummary_(shadowRow, shadowData.headers, awayTeam, homeTeam, awayML, homeML, marketFavorite, marketUnderdog);
 
-    const baseRow = [
-      snapshotTime,
-      gameId,
-      row["Date"],
+    const rowObject = {};
 
-      awayTeam,
-      homeTeam,
-      "",
-      "",
-      "",
+    rowObject["Snapshot Time"] = snapshotTime;
+    rowObject["Game ID"] = gameId;
+    rowObject["Game Date"] = row["Date"];
 
-      modelPick,
-      modelPickSide,
-      "",
+    rowObject["Away Team"] = awayTeam;
+    rowObject["Home Team"] = homeTeam;
+    rowObject["Away Score"] = "";
+    rowObject["Home Score"] = "";
+    rowObject["Winner"] = "";
 
-      row["Away Model Score"],
-      row["Home Model Score"],
-      row["Confidence"],
+    rowObject["Model Pick"] = modelPick;
+    rowObject["Model Pick Side"] = modelPickSide;
+    rowObject["Game Winner Correct?"] = "";
 
-      "",
-      "",
-      "",
+    rowObject["Away Model Score"] = row["Away Model Score"];
+    rowObject["Home Model Score"] = row["Home Model Score"];
+    rowObject["Model Strength"] = row["Confidence"];
 
-      row["Away ML"],
-      row["Home ML"],
-      awayMarketProbability,
-      homeMarketProbability,
-      modelPickMarketProbability,
+    rowObject["Away Model Implied Probability"] = "";
+    rowObject["Home Model Implied Probability"] = "";
+    rowObject["Model Pick Implied Probability"] = "";
 
-      marketFavorite,
-      marketUnderdog,
-      modelPickML,
-      modelPickType,
+    rowObject["Away ML"] = row["Away ML"];
+    rowObject["Home ML"] = row["Home ML"];
+    rowObject["Away Market Implied Probability"] = awayMarketProbability;
+    rowObject["Home Market Implied Probability"] = homeMarketProbability;
+    rowObject["Model Pick Market Implied Probability"] = modelPickMarketProbability;
 
-      modelPickType === "Underdog",
-      "",
-      modelPickType === "Favorite",
-      "",
+    rowObject["Market Favorite"] = marketFavorite;
+    rowObject["Market Underdog"] = marketUnderdog;
+    rowObject["Model Pick ML"] = modelPickML;
+    rowObject["Model Pick Type"] = modelPickType;
 
-      "",
-      "",
+    rowObject["Underdog Pick?"] = modelPickType === "Underdog";
+    rowObject["Underdog Won?"] = "";
+    rowObject["Favorite Pick?"] = modelPickType === "Favorite";
+    rowObject["Favorite Won?"] = "";
 
-      bestEdge.name,
-      bestEdge.value,
-      "",
+    rowObject["Projected Edge %"] = "";
+    rowObject["Beat Market?"] = "";
 
-      false,
-      "PREGAME_MODEL_MATRIX_SNAPSHOT",
-      getModelVersion()
-    ];
+    rowObject["Largest Factor"] = bestEdge.name;
+    rowObject["Largest Factor Value"] = bestEdge.value;
+    rowObject["Flat Bet Profit"] = "";
 
-    rowsToAppend.push(baseRow.concat(matrixRow));
+    rowObject["Final?"] = false;
+    rowObject["Source"] = "PREGAME_MODEL_MATRIX_SNAPSHOT";
+    rowObject["Model Version"] = getModelVersion();
+
+    Object.keys(shadow).forEach(key => {
+      rowObject[key] = shadow[key];
+    });
+
+    matrixHeaders.forEach((header, index) => {
+      rowObject["MM_" + header] = matrixRow[index];
+    });
+
+    if (shadowRow) {
+      shadowData.headers.forEach((header, index) => {
+        rowObject["SM_" + header] = shadowRow[index];
+      });
+    }
+
+    historyRowsToAppend.push(headersToRow_(historyHeaders, rowObject));
+    archiveRowsToAppend.push(headersToRow_(archiveHeaders, rowObject));
   });
 
-  if (rowsToAppend.length > 0) {
-    appendHistoryRows(historySheet, rowsToAppend, historyHeaders.length);
-    appendHistoryRows(archiveSheet, rowsToAppend, historyHeaders.length);
+  if (historyRowsToAppend.length > 0) {
+    appendHistoryRows(historySheet, historyRowsToAppend, historyHeaders.length);
+    appendHistoryRows(archiveSheet, archiveRowsToAppend, archiveHeaders.length);
   }
+}
+
+function getShadowHistoryData_(shadowSheet) {
+  if (!shadowSheet) {
+    return {
+      headers: [],
+      rows: [],
+      byGameId: {}
+    };
+  }
+
+  const values = shadowSheet.getDataRange().getValues();
+  if (values.length < 2) {
+    return {
+      headers: values.length ? values[0] : [],
+      rows: [],
+      byGameId: {}
+    };
+  }
+
+  const headers = values[0];
+  const rows = values.slice(1);
+  const gameIdCol = headers.indexOf("Game ID");
+  const byGameId = {};
+
+  if (gameIdCol !== -1) {
+    rows.forEach(row => {
+      const gameId = row[gameIdCol];
+      if (gameId) byGameId[String(gameId)] = row;
+    });
+  }
+
+  return {
+    headers,
+    rows,
+    byGameId
+  };
+}
+
+function buildShadowHistorySummary_(shadowRow, shadowHeaders, awayTeam, homeTeam, awayML, homeML, marketFavorite, marketUnderdog) {
+  const summary = {};
+
+  const shadowObj = shadowRow ? rowArrayToObject(shadowHeaders, shadowRow) : {};
+  const shadowPick = shadowObj["Model Pick"] || "";
+
+  const shadowPickSide =
+    shadowPick === awayTeam ? "Away" :
+    shadowPick === homeTeam ? "Home" :
+    shadowPick ? "Coin Flip" : "";
+
+  const shadowPickML =
+    shadowPick === awayTeam ? awayML :
+    shadowPick === homeTeam ? homeML :
+    "";
+
+  const shadowPickType =
+    shadowPick === marketFavorite ? "Favorite" :
+    shadowPick === marketUnderdog ? "Underdog" :
+    shadowPick ? "None" : "";
+
+  summary["Shadow Model Pick"] = shadowPick;
+  summary["Shadow Model Pick Side"] = shadowPickSide;
+  summary["Shadow Game Winner Correct?"] = "";
+  summary["Shadow Away Model Score"] = shadowObj["Away Model Score"] || "";
+  summary["Shadow Home Model Score"] = shadowObj["Home Model Score"] || "";
+  summary["Shadow Model Strength"] = shadowObj["Confidence"] || "";
+  summary["Shadow Pick ML"] = shadowPickML;
+  summary["Shadow Pick Type"] = shadowPickType;
+  summary["Shadow Flat Bet Profit"] = "";
+
+  return summary;
+}
+
+function getShadowHistorySummaryHeaders() {
+  return [
+    "Shadow Model Pick",
+    "Shadow Model Pick Side",
+    "Shadow Game Winner Correct?",
+    "Shadow Away Model Score",
+    "Shadow Home Model Score",
+    "Shadow Model Strength",
+    "Shadow Pick ML",
+    "Shadow Pick Type",
+    "Shadow Flat Bet Profit"
+  ];
 }
 
 function updateHistoryResults() {
@@ -162,8 +270,6 @@ function updateHistoryResultsForSheet(sheet) {
     const alreadyFinal = normalizeBooleanHistory(row[col.final]);
     if (alreadyFinal === true) continue;
 
-    const awayTeam = row[col.awayTeam];
-    const homeTeam = row[col.homeTeam];
     const modelPick = row[col.modelPick];
     const winner = result["Winner"];
 
@@ -178,6 +284,10 @@ function updateHistoryResultsForSheet(sheet) {
     const underdogWon = underdogPick && correct === true;
     const favoriteWon = favoritePick && correct === true;
 
+    const shadowPick = col.shadowModelPick !== -1 ? row[col.shadowModelPick] : "";
+    const shadowCorrect = shadowPick && winner ? shadowPick === winner : "";
+    const shadowPickML = col.shadowPickML !== -1 ? row[col.shadowPickML] : "";
+
     updates.push({
       rowNumber: i + 1,
       awayScore: result["Away Score"],
@@ -189,6 +299,8 @@ function updateHistoryResultsForSheet(sheet) {
       favoritePick: favoritePick,
       favoriteWon: favoriteWon,
       flatBetProfit: calculateFlatBetProfit(modelPickML, correct),
+      shadowCorrect: shadowCorrect,
+      shadowFlatBetProfit: calculateFlatBetProfit(shadowPickML, shadowCorrect),
       final: true
     });
   }
@@ -205,6 +317,15 @@ function updateHistoryResultsForSheet(sheet) {
     sheet.getRange(update.rowNumber, col.favoriteWon + 1).setValue(update.favoriteWon);
 
     sheet.getRange(update.rowNumber, col.flatBetProfit + 1).setValue(update.flatBetProfit);
+
+    if (col.shadowCorrect !== -1) {
+      sheet.getRange(update.rowNumber, col.shadowCorrect + 1).setValue(update.shadowCorrect);
+    }
+
+    if (col.shadowFlatBetProfit !== -1) {
+      sheet.getRange(update.rowNumber, col.shadowFlatBetProfit + 1).setValue(update.shadowFlatBetProfit);
+    }
+
     sheet.getRange(update.rowNumber, col.final + 1).setValue(update.final);
   });
 }
@@ -241,7 +362,12 @@ function getHistoryColumnMap(headers) {
     favoriteWon: headers.indexOf("Favorite Won?"),
 
     flatBetProfit: headers.indexOf("Flat Bet Profit"),
-    final: headers.indexOf("Final?")
+    final: headers.indexOf("Final?"),
+
+    shadowModelPick: headers.indexOf("Shadow Model Pick"),
+    shadowCorrect: headers.indexOf("Shadow Game Winner Correct?"),
+    shadowPickML: headers.indexOf("Shadow Pick ML"),
+    shadowFlatBetProfit: headers.indexOf("Shadow Flat Bet Profit")
   };
 }
 
@@ -322,26 +448,37 @@ function resetHistoryTables() {
 
 
 function ensureExactHistoryHeaders(sheet, headers) {
+  return ensureHistoryHeadersAllowAdditions(sheet, headers);
+}
+
+
+function ensureHistoryHeadersAllowAdditions(sheet, expectedHeaders) {
   const lastRow = sheet.getLastRow();
 
   if (lastRow === 0) {
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    return;
+    sheet.getRange(1, 1, 1, expectedHeaders.length).setValues([expectedHeaders]);
+    return expectedHeaders.slice();
   }
 
   const currentHeaders = sheet
-    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), headers.length))
-    .getValues()[0];
+    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), expectedHeaders.length))
+    .getValues()[0]
+    .map(header => String(header || "").trim())
+    .filter(header => header !== "");
 
-  const currentText = currentHeaders.join("|");
-  const expectedText = headers.join("|");
+  const finalHeaders = currentHeaders.slice();
 
-  if (currentText !== expectedText) {
-    throw new Error(
-      sheet.getName() +
-      " headers do not match current HISTORY schema. Do not reset unless you intentionally want to rebuild HISTORY."
-    );
+  expectedHeaders.forEach(header => {
+    if (finalHeaders.indexOf(header) === -1) {
+      finalHeaders.push(header);
+    }
+  });
+
+  if (finalHeaders.length !== currentHeaders.length) {
+    sheet.getRange(1, 1, 1, finalHeaders.length).setValues([finalHeaders]);
   }
+
+  return finalHeaders;
 }
 
 
@@ -353,6 +490,10 @@ function rowArrayToObject(headers, row) {
   });
 
   return obj;
+}
+
+function headersToRow_(headers, rowObject) {
+  return headers.map(header => rowObject[header] !== undefined ? rowObject[header] : "");
 }
 
 
@@ -416,128 +557,3 @@ function getMarketUnderdog(awayTeam, homeTeam, awayML, homeML) {
 
   return "Even";
 }
-
-
-function americanOddsToHistoryProbability(odds) {
-  odds = parseHistoryNumber(odds);
-
-  if (odds === "") return "";
-
-  if (odds < 0) {
-    return Number((Math.abs(odds) / (Math.abs(odds) + 100)).toFixed(4));
-  }
-
-  return Number((100 / (odds + 100)).toFixed(4));
-}
-
-
-function calculateFlatBetProfit(americanOdds, won) {
-  const odds = parseHistoryNumber(americanOdds);
-
-  if (odds === "") return "";
-  if (won === "") return "";
-
-  if (!won) return -100;
-
-  if (odds > 0) {
-    return odds;
-  }
-
-  return Number((10000 / Math.abs(odds)).toFixed(2));
-}
-
-
-function parseHistoryNumber(value) {
-  if (value === "" || value === undefined || value === null) return "";
-
-  const num = Number(value);
-
-  return isNaN(num) ? "" : num;
-}
-
-
-function normalizeBooleanHistory(value) {
-  if (value === true || value === "TRUE" || value === "Yes") return true;
-  if (value === false || value === "FALSE" || value === "No") return false;
-  return null;
-}
-
-
-function debugHistoryGameId() {
-  const sh = SpreadsheetApp.getActive().getSheetByName("HISTORY");
-  const values = sh.getDataRange().getValues();
-  const headers = values[0];
-
-  const gameIdCol = headers.indexOf("Game ID");
-  Logger.log("Game ID col = " + gameIdCol);
-
-  for (let r = 1; r < values.length; r++) {
-    if (String(values[r][gameIdCol]) === "822799") {
-      Logger.log("FOUND ROW " + (r + 1));
-      Logger.log(values[r]);
-      return;
-    }
-  }
-
-  Logger.log("NOT FOUND in HISTORY");
-}
-
-
-function validatePregameSnapshotReady() {
-  const matrixSheet = getOrCreateSheet("MODEL_MATRIX");
-  const values = matrixSheet.getDataRange().getValues();
-
-  if (values.length < 2) {
-    throw new Error("Pregame snapshot aborted: MODEL_MATRIX has no game rows.");
-  }
-
-  const headers = values[0];
-  const rows = values.slice(1);
-
-  const requiredHeaders = [
-    "Date",
-    "Game ID",
-    "Away Team",
-    "Home Team",
-    "Away Model Score",
-    "Home Model Score",
-    "Model Pick",
-    "Confidence"
-  ];
-
-  requiredHeaders.forEach(header => {
-    if (headers.indexOf(header) === -1) {
-      throw new Error("Pregame snapshot aborted: missing MODEL_MATRIX column: " + header);
-    }
-  });
-
-  const gameIdCol = headers.indexOf("Game ID");
-  const awayTeamCol = headers.indexOf("Away Team");
-  const homeTeamCol = headers.indexOf("Home Team");
-  const modelPickCol = headers.indexOf("Model Pick");
-  const confidenceCol = headers.indexOf("Confidence");
-
-  const badRows = [];
-
-  rows.forEach((row, index) => {
-    const rowNumber = index + 2;
-
-    const gameId = row[gameIdCol];
-    const awayTeam = row[awayTeamCol];
-    const homeTeam = row[homeTeamCol];
-    const modelPick = row[modelPickCol];
-    const confidence = row[confidenceCol];
-
-    if (!gameId || !awayTeam || !homeTeam || !modelPick || confidence === "") {
-      badRows.push(rowNumber);
-    }
-  });
-
-  if (badRows.length > 0) {
-    throw new Error(
-      "Pregame snapshot aborted: incomplete MODEL_MATRIX rows: " +
-      badRows.join(", ")
-    );
-  }
-}
-
