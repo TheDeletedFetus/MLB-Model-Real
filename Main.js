@@ -21,6 +21,8 @@ function runMorningCoreUpdate() {
 
   buildModelMatrix();
   scoreModelMatrix();
+  buildShadowModelMatrix();
+
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
@@ -34,6 +36,8 @@ function runBullpenUpdate() {
 
   buildModelMatrix();
   scoreModelMatrix();
+  buildShadowModelMatrix();
+
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
@@ -45,6 +49,8 @@ function runOddsSnapshot() {
 
   buildModelMatrix();
   scoreModelMatrix();
+  buildShadowModelMatrix();
+
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
@@ -56,6 +62,7 @@ function runPregameSnapshot() {
 
   buildModelMatrix();
   scoreModelMatrix();
+  buildShadowModelMatrix();
 
   validatePregameSnapshotReady();
 
@@ -75,6 +82,8 @@ function runResultsAndHistory() {
 
   buildModelMatrix();
   scoreModelMatrix();
+  buildShadowModelMatrix();
+
   buildTodayView();
   buildDashboard();
   buildPerformanceDashboard();
