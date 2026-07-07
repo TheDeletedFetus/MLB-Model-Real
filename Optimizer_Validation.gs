@@ -1,11 +1,10 @@
 /***************************************
- * OPTIMIZER VALIDATION v0.2.0
+ * OPTIMIZER VALIDATION v0.3.0
  *
  * Purpose:
- * Validate shared optimizer scoring against live Model_Matrix output.
- *
- * This validator uses the same weighted-edge scorer intended for optimizer use:
- *   sharedScoreGameFromEdges_()
+ * Validate optimizer scoring against live Model_Matrix output using the
+ * production scoring helper from Scoring.js:
+ *   scoreModelRowWithSettings()
  *
  * Run manually after the normal model has been scored:
  *   runOptimizerValidation()
@@ -15,7 +14,7 @@
  ***************************************/
 
 const OPT_VALIDATION = {
-  MODEL_MATRIX_SHEET: "Model_Matrix",
+  MODEL_MATRIX_SHEET: "MODEL_MATRIX",
   OUTPUT_SHEET: "OPTIMIZER_VALIDATION",
   SCORE_TOLERANCE: 0.0001,
 
@@ -31,15 +30,13 @@ const OPT_VALIDATION = {
 
 function runOptimizerValidation() {
   const ss = SpreadsheetApp.getActive();
-  const settingsSheet = ss.getSheetByName(ITER_OPT.SETTINGS_SHEET);
-  const modelSheet = ss.getSheetByName(OPT_VALIDATION.MODEL_MATRIX_SHEET);
+  const modelSheet = ss.getSheetByName(OPT_VALIDATION.MODEL_MATRIX_SHEET) || ss.getSheetByName("Model_Matrix");
 
-  if (!settingsSheet) throw new Error("Missing Settings sheet.");
-  if (!modelSheet) throw new Error("Missing Model_Matrix sheet.");
+  if (!modelSheet) throw new Error("Missing MODEL_MATRIX / Model_Matrix sheet.");
 
-  const settings = readOptimizerSettings_(settingsSheet);
-  const modelData = readOptimizerValidationModelMatrix_(modelSheet, settings.features);
-  const weights = buildWeightMap_(settings.features, "currentWeight");
+  const modelData = readOptimizerValidationModelMatrix_(modelSheet);
+  const settings = getActiveModelSettings();
+  const edgeStats = calculateEdgeStats(modelData.rows, modelData.headersArray, settings);
 
   const output = [];
   output.push([
@@ -47,13 +44,13 @@ function runOptimizerValidation() {
     "Away Team",
     "Home Team",
     "Live Away Score",
-    "Shared Away Score",
+    "Production Helper Away Score",
     "Away Score Diff",
     "Live Home Score",
-    "Shared Home Score",
+    "Production Helper Home Score",
     "Home Score Diff",
     "Live Pick",
-    "Shared Pick",
+    "Production Helper Pick",
     "Used Features",
     "Score Match",
     "Pick Match"
@@ -66,26 +63,22 @@ function runOptimizerValidation() {
   let firstMismatch = null;
 
   modelData.games.forEach(game => {
-    const sharedScore = sharedScoreGameFromEdges_(
+    const helperScore = scoreModelRowWithSettings(
       game.row,
-      modelData.edgeColumnMap,
-      settings.features,
-      weights,
-      game.awayTeam,
-      game.homeTeam
+      modelData.headersArray,
+      settings,
+      edgeStats
     );
-
-    if (!sharedScore.hasScore) return;
 
     tested++;
 
-    const awayDiff = sharedScore.awayScore - game.liveAwayScore;
-    const homeDiff = sharedScore.homeScore - game.liveHomeScore;
+    const awayDiff = helperScore.awayScore - game.liveAwayScore;
+    const homeDiff = helperScore.homeScore - game.liveHomeScore;
 
     const scoreMatch = Math.abs(awayDiff) <= OPT_VALIDATION.SCORE_TOLERANCE &&
       Math.abs(homeDiff) <= OPT_VALIDATION.SCORE_TOLERANCE;
 
-    const pickMatch = sameTeam_(game.livePick, sharedScore.pick);
+    const pickMatch = sameTeam_(game.livePick, helperScore.pick);
 
     if (scoreMatch) scoreMatches++;
     if (pickMatch) pickMatches++;
@@ -94,13 +87,11 @@ function runOptimizerValidation() {
       if (!firstMismatch) {
         firstMismatch = {
           game,
-          sharedScore,
+          helperScore,
           awayDiff,
           homeDiff,
           scoreMatch,
-          pickMatch,
-          modelData,
-          weights
+          pickMatch
         };
       }
     }
@@ -110,14 +101,14 @@ function runOptimizerValidation() {
       game.awayTeam,
       game.homeTeam,
       game.liveAwayScore,
-      sharedScore.awayScore,
+      helperScore.awayScore,
       awayDiff,
       game.liveHomeScore,
-      sharedScore.homeScore,
+      helperScore.homeScore,
       homeDiff,
       game.livePick,
-      sharedScore.pick,
-      sharedScore.usedFeatures,
+      helperScore.pick,
+      helperScore.usedFeatures,
       scoreMatch ? "TRUE" : "FALSE",
       pickMatch ? "TRUE" : "FALSE"
     ]);
@@ -129,21 +120,22 @@ function runOptimizerValidation() {
   output.push(["Score Matches", scoreMatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push(["Pick Matches", pickMatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push(["Mismatches", mismatches, "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Mapped Edge Columns", Object.keys(modelData.edgeColumnMap).length, "", "", "", "", "", "", "", "", "", "", "", ""]);
 
   if (firstMismatch) {
-    appendFirstMismatchBreakdown_(output, firstMismatch, settings.features);
+    appendFirstMismatchBreakdown_(output, firstMismatch);
   }
 
   writeOptimizerValidationOutput_(ss, output);
 }
 
 
-function readOptimizerValidationModelMatrix_(sheet, features) {
+function readOptimizerValidationModelMatrix_(sheet) {
   const values = sheet.getDataRange().getValues();
-  const headerInfo = findOptimizerValidationHeaderRow_(values);
-  const headers = headerInfo.headers;
-  const headerRowIndex = headerInfo.rowIndex;
+  if (values.length < 2) throw new Error("MODEL_MATRIX has no data rows.");
+
+  const headersArray = values[0];
+  const headers = mapHeaders_(headersArray);
+  const rows = values.slice(1);
 
   const indexes = {
     awayTeam: getHeaderIndex_(headers, OPT_VALIDATION.REQUIRED_MODEL_HEADERS.awayTeam),
@@ -153,22 +145,26 @@ function readOptimizerValidationModelMatrix_(sheet, features) {
     livePick: getHeaderIndex_(headers, OPT_VALIDATION.REQUIRED_MODEL_HEADERS.livePick)
   };
 
-  const edgeColumnMap = sharedBuildEdgeColumnMap_(headers, features, "");
+  Object.keys(indexes).forEach(key => {
+    if (indexes[key] === undefined) {
+      throw new Error("MODEL_MATRIX missing required validation header: " + key);
+    }
+  });
+
   const games = [];
 
-  for (let rowIndex = headerRowIndex + 1; rowIndex < values.length; rowIndex++) {
-    const row = values[rowIndex];
+  rows.forEach((row, idx) => {
     const awayTeam = cleanText_(row[indexes.awayTeam]);
     const homeTeam = cleanText_(row[indexes.homeTeam]);
     const liveAwayScore = Number(row[indexes.liveAwayScore]);
     const liveHomeScore = Number(row[indexes.liveHomeScore]);
     const livePick = cleanText_(row[indexes.livePick]);
 
-    if (!awayTeam || !homeTeam || !livePick) continue;
-    if (!isFinite(liveAwayScore) || !isFinite(liveHomeScore)) continue;
+    if (!awayTeam || !homeTeam || !livePick) return;
+    if (!isFinite(liveAwayScore) || !isFinite(liveHomeScore)) return;
 
     games.push({
-      rowNumber: rowIndex + 1,
+      rowNumber: idx + 2,
       row,
       awayTeam,
       homeTeam,
@@ -176,52 +172,51 @@ function readOptimizerValidationModelMatrix_(sheet, features) {
       liveHomeScore,
       livePick
     });
-  }
+  });
 
   return {
+    headersArray,
     headers,
+    rows,
     indexes,
-    edgeColumnMap,
     games
   };
 }
 
 
-function appendFirstMismatchBreakdown_(output, mismatch, features) {
+function appendFirstMismatchBreakdown_(output, mismatch) {
   const game = mismatch.game;
-  const sharedScore = mismatch.sharedScore;
-  const contributionRows = sharedContributionRowsFromEdges_(
-    game.row,
-    mismatch.modelData.edgeColumnMap,
-    features,
-    mismatch.weights
-  );
+  const helperScore = mismatch.helperScore;
 
   output.push(["", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push(["FIRST MISMATCH DETAIL", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push(["Game", game.awayTeam + " @ " + game.homeTeam, "", "", "", "", "", "", "", "", "", "", "", ""]);
-  output.push(["Live Away Score", game.liveAwayScore, "Shared Away Score", sharedScore.awayScore, "Diff", mismatch.awayDiff, "", "", "", "", "", "", "", ""]);
-  output.push(["Live Home Score", game.liveHomeScore, "Shared Home Score", sharedScore.homeScore, "Diff", mismatch.homeDiff, "", "", "", "", "", "", "", ""]);
-  output.push(["Live Pick", game.livePick, "Shared Pick", sharedScore.pick, "Used Features", sharedScore.usedFeatures, "", "", "", "", "", "", "", ""]);
-  output.push(["Weighted Edge Sum", sharedScore.weightedEdgeSum, "Scale", SHARED_SCORING.SCORE_SCALE, "", "", "", "", "", "", "", "", "", ""]);
+  output.push(["Live Away Score", game.liveAwayScore, "Helper Away Score", helperScore.awayScore, "Diff", mismatch.awayDiff, "", "", "", "", "", "", "", ""]);
+  output.push(["Live Home Score", game.liveHomeScore, "Helper Home Score", helperScore.homeScore, "Diff", mismatch.homeDiff, "", "", "", "", "", "", "", ""]);
+  output.push(["Live Pick", game.livePick, "Helper Pick", helperScore.pick, "Used Features", helperScore.usedFeatures, "", "", "", "", "", "", "", ""]);
+  output.push(["Final Score", helperScore.finalScore, "Total Score", helperScore.totalScore, "Total Weight", helperScore.totalWeight, "", "", "", "", "", "", "", ""]);
   output.push(["", "", "", "", "", "", "", "", "", "", "", "", "", ""]);
   output.push([
     "Feature",
-    "Edge",
     "Weight",
-    "Raw Contribution",
-    "Scaled Contribution",
-    "", "", "", "", "", "", "", "", ""
+    "Raw Edge",
+    "Mean",
+    "StdDev",
+    "Z-Score",
+    "Contribution",
+    "", "", "", "", "", "", ""
   ]);
 
-  contributionRows.forEach(item => {
+  helperScore.contributions.forEach(item => {
     output.push([
-      item.feature,
-      item.edge,
+      item.stat,
       item.weight,
-      item.rawContribution,
-      item.scaledContribution,
-      "", "", "", "", "", "", "", "", ""
+      item.rawEdge,
+      item.mean,
+      item.stdDev,
+      item.zScore,
+      item.contribution,
+      "", "", "", "", "", "", ""
     ]);
   });
 }
@@ -245,17 +240,4 @@ function writeOptimizerValidationOutput_(ss, output) {
   sheet.getRange(1, 1, rectangular.length, width).setValues(rectangular);
   sheet.getRange(1, 1, 1, width).setFontWeight("bold");
   sheet.autoResizeColumns(1, Math.min(width, 14));
-}
-
-
-function findOptimizerValidationHeaderRow_(values) {
-  const required = [
-    OPT_VALIDATION.REQUIRED_MODEL_HEADERS.awayTeam,
-    OPT_VALIDATION.REQUIRED_MODEL_HEADERS.homeTeam,
-    OPT_VALIDATION.REQUIRED_MODEL_HEADERS.liveAwayScore,
-    OPT_VALIDATION.REQUIRED_MODEL_HEADERS.liveHomeScore,
-    OPT_VALIDATION.REQUIRED_MODEL_HEADERS.livePick
-  ];
-
-  return findHeaderRow_(values, required, OPT_VALIDATION.MODEL_MATRIX_SHEET);
 }
